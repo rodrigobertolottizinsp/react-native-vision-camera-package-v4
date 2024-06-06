@@ -84,6 +84,7 @@ class RecordingSession {
        completion: @escaping (RecordingSession, AVAssetWriter.Status, Error?) -> Void, maxFileSize: Int) throws {
     completionHandler = completion
     videoOrientation = orientation
+
     self.maxFileSize = maxFileSize
     do {
       assetWriter = try AVAssetWriter(outputURL: url, fileType: fileType)

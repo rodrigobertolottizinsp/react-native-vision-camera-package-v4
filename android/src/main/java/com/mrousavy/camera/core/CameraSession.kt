@@ -522,7 +522,7 @@ class CameraSession(private val context: Context, private val callback: Callback
     codeScannerOutput?.targetRotation = outputOrientation.toSurfaceRotation()
   }
 
-  suspend fun takePhoto(flash: Flash, enableShutterSound: Boolean, filePath: String): Photo {
+  suspend fun takePhoto(flash: Flash, enableShutterSound: Boolean, outputOrientation: Orientation, filePath: String): Photo {
     val camera = camera ?: throw CameraNotReadyError()
     val photoOutput = photoOutput ?: throw PhotoNotEnabledError()
 

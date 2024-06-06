@@ -42,9 +42,6 @@ class CameraConfiguration {
   // Zoom
   var zoom: CGFloat?
 
-  //Video mode flag
-  var videoMode = false
-
   // Exposure
   var exposure: Float?
 

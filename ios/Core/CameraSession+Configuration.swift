@@ -66,8 +66,6 @@ extension CameraSession {
     videoOutput = nil
     codeScannerOutput = nil
 
-    let isMirrored = videoDeviceInput?.device.position == .front
-
     // Photo Output
     if case let .enabled(photo) = configuration.photo {
       VisionLogger.log(level: .info, message: "Adding Photo output...")
@@ -111,7 +109,12 @@ extension CameraSession {
       // 2. Configure
       videoOutput.setSampleBufferDelegate(self, queue: CameraQueues.videoQueue)
       videoOutput.alwaysDiscardsLateVideoFrames = true
-      videoOutput.isMirrored = isMirrored
+      if isMirrored {
+        // rotate by 180 deg and mirror the selfie camera so it behaves like the back camera.
+        // we later need to flip it alongside the horizontal axis when recording videos with it.
+        videoOutput.orientation = videoOutput.orientation.flipped()
+        videoOutput.isMirrored = isMirrored
+      }
 
       self.videoOutput = videoOutput
     }

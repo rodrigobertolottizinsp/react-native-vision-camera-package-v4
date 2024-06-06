@@ -87,7 +87,6 @@ extension CameraSession {
       }
 
       // Create temporary file
-      let errorPointer = ErrorPointer(nilLiteral: ())
       let fileExtension = options.fileType.descriptor ?? "mov"
       guard let tempFilePath = RCTTempFilePath(fileExtension, errorPointer) else {
         let message = errorPointer?.pointee?.description
@@ -106,7 +105,7 @@ extension CameraSession {
         let recordingSession = try RecordingSession(url: url,
                                                     fileType: options.fileType,
                                                     metadataProvider: self.metadataProvider,
-                                                    orientation: self.outputOrientation,
+                                                    orientation: self.videoFileOrientation,
                                                     completion: onFinish, maxFileSize: maxFileSize)
 
         // Init Audio + Activate Audio Session (optional)
@@ -142,13 +141,10 @@ extension CameraSession {
 
         let end = DispatchTime.now()
         VisionLogger.log(level: .info, message: "RecordingSesssion started in \(Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000)ms!")
+      } catch let error as CameraError {
+        onError(error)
       } catch let error as NSError {
-        if let error = error as? CameraError {
-          onError(error)
-        } else {
-          onError(.capture(.createRecorderError(message: "RecordingSession failed with unknown error: \(error.description)")))
-        }
-        return
+        onError(.capture(.createRecorderError(message: "RecordingSession failed with unknown error: \(error.description)")))
       }
     }
   }

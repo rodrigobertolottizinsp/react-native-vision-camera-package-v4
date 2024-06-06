@@ -20,6 +20,21 @@ enum class Orientation(override val unionValue: String) : JSUnionValue {
       LANDSCAPE_RIGHT -> Surface.ROTATION_90
     }
 
+  /**
+   * Flips this Orientation to be interpreted as a rotation-offset.
+   * - 0° -> 0°
+   * - 90° -> 270°
+   * - 180° -> 180°
+   * - 270° -> 90°
+   */
+  fun reversed(): Orientation =
+    when (this) {
+      PORTRAIT -> PORTRAIT
+      LANDSCAPE_LEFT -> LANDSCAPE_RIGHT
+      PORTRAIT_UPSIDE_DOWN -> PORTRAIT_UPSIDE_DOWN
+      LANDSCAPE_RIGHT -> LANDSCAPE_LEFT
+    }
+
   companion object : JSUnionValue.Companion<Orientation> {
     override fun fromUnionValue(unionValue: String?): Orientation =
       when (unionValue) {

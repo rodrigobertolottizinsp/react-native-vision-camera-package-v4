@@ -8,6 +8,7 @@
 
 import AVFoundation
 import Foundation
+import UIKit
 
 /**
  The Orientation used for the Preview, Photo, Video and Frame Processor outputs.
@@ -83,6 +84,21 @@ enum Orientation: String, JSUnionValue {
     }
   }
 
+  init(interfaceOrientation: UIInterfaceOrientation) {
+    switch interfaceOrientation {
+    case .portrait:
+      self = .portrait
+    case .landscapeRight:
+      self = .landscapeRight
+    case .portraitUpsideDown:
+      self = .portraitUpsideDown
+    case .landscapeLeft:
+      self = .landscapeLeft
+    default:
+      self = .portrait
+    }
+  }
+
   var jsValue: String {
     return rawValue
   }
@@ -139,9 +155,25 @@ enum Orientation: String, JSUnionValue {
     }
   }
 
-  func rotateBy(orientation: Orientation) -> Orientation {
-    let added = degrees + orientation.degrees
+  var isLandscape: Bool {
+    return self == .landscapeLeft || self == .landscapeRight
+  }
+
+  func rotatedBy(degrees: Double) -> Orientation {
+    let added = self.degrees + degrees
     let degress = added.truncatingRemainder(dividingBy: 360)
     return Orientation(degrees: degress)
+  }
+
+  func rotatedBy(orientation: Orientation) -> Orientation {
+    return rotatedBy(degrees: orientation.degrees)
+  }
+
+  func flipped() -> Orientation {
+    return rotatedBy(degrees: 180)
+  }
+
+  func relativeTo(orientation: Orientation) -> Orientation {
+    return rotatedBy(degrees: -orientation.degrees)
   }
 }
