@@ -1,0 +1,212 @@
+[
+  {
+    "level_": 0,
+    "message_": "Start JSON generation. Platform version: 26 min SDK version: x86",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": 974294317
+  },
+  {
+    "level_": 0,
+    "message_": "rebuilding JSON /Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/x86/android_gradle_build.json due to:",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": 1599462241
+  },
+  {
+    "level_": 0,
+    "message_": "- expected json /Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/x86/android_gradle_build.json file is not present, will remove stale json folder",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": -1796209365
+  },
+  {
+    "level_": 0,
+    "message_": "- missing previous command file /Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/x86/metadata_generation_command.txt, will remove stale json folder",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": -1533448407
+  },
+  {
+    "level_": 0,
+    "message_": "- command changed from previous, will remove stale json folder",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": 2080056562
+  },
+  {
+    "level_": 0,
+    "message_": "- prefab configuration has changed",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": 1227484245
+  },
+  {
+    "level_": 0,
+    "message_": "\"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java\" \\\n  --class-path \\\n  /Users/rodrigobertolotti/.gradle/caches/modules-2/files-2.1/com.google.prefab/cli/2.0.0/f2702b5ca13df54e3ca92f29d6b403fb6285d8df/cli-2.0.0-all.jar \\\n  com.google.prefab.cli.AppKt \\\n  --build-system \\\n  cmake \\\n  --platform \\\n  android \\\n  --abi \\\n  x86 \\\n  --os-version \\\n  26 \\\n  --stl \\\n  c++_shared \\\n  --ndk-version \\\n  23 \\\n  --output \\\n  /Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/prefab/x86/prefab-configure \\\n  /Users/rodrigobertolotti/.gradle/caches/transforms-3/524c60072bcd5ecc90651ecae64adfe4/transformed/jetified-react-android-0.71.4-debug/prefab \\\n  /Users/rodrigobertolotti/.gradle/caches/transforms-3/2b9d6b0569543331508a4ca012fd8e16/transformed/jetified-fbjni-0.3.0/prefab\n",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": -207121052
+  },
+  {
+    "level_": 0,
+    "message_": "removing stale contents from \u0027/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/x86\u0027",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": -1610011272
+  },
+  {
+    "level_": 0,
+    "message_": "created folder \u0027/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/x86\u0027",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": 2024552428
+  },
+  {
+    "level_": 0,
+    "message_": "executing cmake /Users/rodrigobertolotti/Library/Android/sdk/cmake/3.18.1/bin/cmake \\\n  -H/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android \\\n  -DCMAKE_SYSTEM_NAME\u003dAndroid \\\n  -DCMAKE_EXPORT_COMPILE_COMMANDS\u003dON \\\n  -DCMAKE_SYSTEM_VERSION\u003d26 \\\n  -DANDROID_PLATFORM\u003dandroid-26 \\\n  -DANDROID_ABI\u003dx86 \\\n  -DCMAKE_ANDROID_ARCH_ABI\u003dx86 \\\n  -DANDROID_NDK\u003d/Users/rodrigobertolotti/Library/Android/sdk/ndk/23.1.7779620 \\\n  -DCMAKE_ANDROID_NDK\u003d/Users/rodrigobertolotti/Library/Android/sdk/ndk/23.1.7779620 \\\n  -DCMAKE_TOOLCHAIN_FILE\u003d/Users/rodrigobertolotti/Library/Android/sdk/ndk/23.1.7779620/build/cmake/android.toolchain.cmake \\\n  -DCMAKE_MAKE_PROGRAM\u003d/Users/rodrigobertolotti/Library/Android/sdk/cmake/3.18.1/bin/ninja \\\n  \"-DCMAKE_CXX_FLAGS\u003d-O2 -frtti -fexceptions -Wall -Wno-unused-variable -fstack-protector-all\" \\\n  -DCMAKE_LIBRARY_OUTPUT_DIRECTORY\u003d/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/build/intermediates/cxx/Debug/6i6j5965/obj/x86 \\\n  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY\u003d/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/build/intermediates/cxx/Debug/6i6j5965/obj/x86 \\\n  -DCMAKE_BUILD_TYPE\u003dDebug \\\n  -DCMAKE_FIND_ROOT_PATH\u003d/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/prefab/x86/prefab \\\n  -B/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/x86 \\\n  -GNinja \\\n  -DANDROID_STL\u003dc++_shared \\\n  -DNODE_MODULES_DIR\u003d/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/node_modules \\\n  -DENABLE_FRAME_PROCESSORS\u003dOFF\n",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": -42442088
+  },
+  {
+    "level_": 0,
+    "message_": "/Users/rodrigobertolotti/Library/Android/sdk/cmake/3.18.1/bin/cmake \\\n  -H/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android \\\n  -DCMAKE_SYSTEM_NAME\u003dAndroid \\\n  -DCMAKE_EXPORT_COMPILE_COMMANDS\u003dON \\\n  -DCMAKE_SYSTEM_VERSION\u003d26 \\\n  -DANDROID_PLATFORM\u003dandroid-26 \\\n  -DANDROID_ABI\u003dx86 \\\n  -DCMAKE_ANDROID_ARCH_ABI\u003dx86 \\\n  -DANDROID_NDK\u003d/Users/rodrigobertolotti/Library/Android/sdk/ndk/23.1.7779620 \\\n  -DCMAKE_ANDROID_NDK\u003d/Users/rodrigobertolotti/Library/Android/sdk/ndk/23.1.7779620 \\\n  -DCMAKE_TOOLCHAIN_FILE\u003d/Users/rodrigobertolotti/Library/Android/sdk/ndk/23.1.7779620/build/cmake/android.toolchain.cmake \\\n  -DCMAKE_MAKE_PROGRAM\u003d/Users/rodrigobertolotti/Library/Android/sdk/cmake/3.18.1/bin/ninja \\\n  \"-DCMAKE_CXX_FLAGS\u003d-O2 -frtti -fexceptions -Wall -Wno-unused-variable -fstack-protector-all\" \\\n  -DCMAKE_LIBRARY_OUTPUT_DIRECTORY\u003d/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/build/intermediates/cxx/Debug/6i6j5965/obj/x86 \\\n  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY\u003d/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/build/intermediates/cxx/Debug/6i6j5965/obj/x86 \\\n  -DCMAKE_BUILD_TYPE\u003dDebug \\\n  -DCMAKE_FIND_ROOT_PATH\u003d/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/prefab/x86/prefab \\\n  -B/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/x86 \\\n  -GNinja \\\n  -DANDROID_STL\u003dc++_shared \\\n  -DNODE_MODULES_DIR\u003d/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/node_modules \\\n  -DENABLE_FRAME_PROCESSORS\u003dOFF\n",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": -2018701865
+  },
+  {
+    "level_": 0,
+    "message_": "Exiting generation of /Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/x86/compile_commands.json.bin normally",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": -1290833135
+  },
+  {
+    "level_": 0,
+    "message_": "done executing cmake",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": 1767710311
+  },
+  {
+    "level_": 0,
+    "message_": "write command file /Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/6i6j5965/x86/metadata_generation_command.txt",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": -1517567509
+  },
+  {
+    "level_": 0,
+    "message_": "JSON generation completed without problems",
+    "file_": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt",
+    "tag_": "debug|x86",
+    "diagnosticCode_": 0,
+    "memoizedIsInitialized": 1,
+    "unknownFields": {
+      "fields": {},
+      "fieldsDescending": {}
+    },
+    "memoizedSize": -1,
+    "memoizedHashCode": -589183901
+  }
+]

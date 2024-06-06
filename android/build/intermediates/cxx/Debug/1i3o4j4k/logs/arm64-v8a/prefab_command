@@ -1,0 +1,21 @@
+"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java" \
+  --class-path \
+  /Users/rodrigobertolotti/.gradle/caches/modules-2/files-2.1/com.google.prefab/cli/2.0.0/f2702b5ca13df54e3ca92f29d6b403fb6285d8df/cli-2.0.0-all.jar \
+  com.google.prefab.cli.AppKt \
+  --build-system \
+  cmake \
+  --platform \
+  android \
+  --abi \
+  arm64-v8a \
+  --os-version \
+  26 \
+  --stl \
+  c++_shared \
+  --ndk-version \
+  23 \
+  --output \
+  /var/folders/w9/g3x4jkn56_34pdx1rpgbhx640000gn/T/agp-prefab-staging13326333010247425803/staged-cli-output \
+  /Users/rodrigobertolotti/.gradle/caches/transforms-3/98ee32f3eb6ad0424183bb762b771c87/transformed/jetified-react-android-0.72.7-debug/prefab \
+  /Users/rodrigobertolotti/.gradle/caches/transforms-3/62f2e0a30b5014e20f3aa5fac3e0769a/transformed/jetified-fbjni-0.3.0/prefab \
+  /Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/build/intermediates/cxx/refs/react-native-worklets-core/d634s6m1

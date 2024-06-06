@@ -1,0 +1,3 @@
+Usage: prefab [OPTIONS] PACKAGE_PATH...
+
+Error: Invalid value for "PACKAGE_PATH": Directory "/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/example/node_modules/react-native-worklets-core/android/build/intermediates/prefab_package/debug/prefab" is not readable.

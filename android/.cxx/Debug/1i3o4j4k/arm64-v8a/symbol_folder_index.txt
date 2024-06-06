@@ -1,0 +1,1 @@
+/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/build/intermediates/cxx/Debug/1i3o4j4k/obj/arm64-v8a

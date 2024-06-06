@@ -1,0 +1,14 @@
+# ninja log v5
+2	393	1717606493	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/java-bindings/JFrameProcessor.cpp.o	94d12f4edf07c0d5
+11	2435	1717606495	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/java-bindings/JFrameProcessorPlugin.cpp.o	f28b823b511ad343
+1	2613	1717606496	CMakeFiles/VisionCamera.dir/src/main/cpp/VisionCamera.cpp.o	f00e60ff69249fe4
+7	2634	1717606496	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/java-bindings/JFrame.cpp.o	2ae59b3d7a69fe37
+1	2666	1717606496	CMakeFiles/VisionCamera.dir/src/main/cpp/MutableJByteBuffer.cpp.o	68f19bdd7e4bb50b
+393	3227	1717606496	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/java-bindings/JVisionCameraProxy.cpp.o	443434bab9bbf742
+1	3298	1717606496	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/FrameProcessorPluginHostObject.cpp.o	ecea2365e12aa905
+4	3437	1717606496	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/java-bindings/JSharedArray.cpp.o	46694f484d0325b7
+3	3882	1717606497	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/JSIJNIConversion.cpp.o	437e3e67afe7bbfc
+3	3902	1717606497	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/VisionCameraProxy.cpp.o	13f2b77488d62aa9
+2	4309	1717606497	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/FrameHostObject.cpp.o	46fe63153d1078c3
+2436	4638	1717606498	CMakeFiles/VisionCamera.dir/src/main/cpp/frameprocessors/java-bindings/JVisionCameraScheduler.cpp.o	9be3e5fccab93a4c
+4638	4857	1717606498	../../../../build/intermediates/cxx/Debug/6i6j5965/obj/arm64-v8a/libVisionCamera.so	ae3a4cded031946e

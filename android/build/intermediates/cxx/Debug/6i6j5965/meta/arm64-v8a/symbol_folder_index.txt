@@ -1,0 +1,1 @@
+/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/build/intermediates/cxx/Debug/6i6j5965/obj/arm64-v8a

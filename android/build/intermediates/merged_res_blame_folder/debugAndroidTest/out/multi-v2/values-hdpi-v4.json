@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.mrousavy.camera.test.react-native-vision-camera-mergeDebugAndroidTestResources-26:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "/Users/rodrigobertolotti/.gradle/caches/transforms-3/77158989760b2b542169d760eb34c529/transformed/appcompat-1.4.1/res/values-hdpi-v4/values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        }
+    ]
+}
