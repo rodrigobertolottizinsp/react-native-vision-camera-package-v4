@@ -13,8 +13,9 @@ import Foundation
  A fully-featured Camera Session supporting preview, video, photo, frame processing, and code scanning outputs.
  All changes to the session have to be controlled via the `configure` function.
  */
-class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
+final class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
   // Configuration
+  private var isInitialized = false
   var configuration: CameraConfiguration?
   var currentConfigureCall: DispatchTime = .now()
   // Capture Session
@@ -31,7 +32,6 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
   var metadataProvider = MetadataProvider()
   var recordingSession: RecordingSession?
   var didCancelRecording = false
-  var isRecording = false
   var orientationManager = OrientationManager()
 
   // Callbacks
@@ -51,8 +51,6 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
    */
   override init() {
     super.init()
-
-    orientationManager.delegate = self
     NotificationCenter.default.addObserver(self,
                                            selector: #selector(sessionRuntimeError),
                                            name: .AVCaptureSessionRuntimeError,
@@ -65,6 +63,14 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
                                            selector: #selector(audioSessionInterrupted),
                                            name: AVAudioSession.interruptionNotification,
                                            object: AVAudioSession.sharedInstance)
+  }
+
+  private func initialize() {
+    if isInitialized {
+      return
+    }
+    orientationManager.delegate = self
+    isInitialized = true
   }
 
   deinit {
@@ -83,9 +89,7 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
    Creates a PreviewView for the current Capture Session
    */
   func createPreviewView(frame: CGRect) -> PreviewView {
-    let previewView = PreviewView(frame: frame, session: captureSession)
-    orientationManager.setPreviewView(previewView)
-    return previewView
+    return PreviewView(frame: frame, session: captureSession)
   }
 
   func onConfigureError(_ error: Error) {
@@ -101,10 +105,12 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
 
   /**
    Update the session configuration.
-   Any changes in here will be re-configured only if required, and under a lock.
+   Any changes in here will be re-configured only if required, and under a lock (in this case, the serial cameraQueue DispatchQueue).
    The `configuration` object is a copy of the currently active configuration that can be modified by the caller in the lambda.
    */
   func configure(_ lambda: @escaping (_ configuration: CameraConfiguration) throws -> Void) {
+    initialize()
+
     VisionLogger.log(level: .info, message: "configure { ... }: Waiting for lock...")
 
     // Set up Camera (Video) Capture Session (on camera queue, acts like a lock)
@@ -201,11 +207,6 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
           try self.configureTorch(configuration: config, device: device)
         }
 
-        // Notify about Camera initialization
-        if difference.inputChanged {
-          self.delegate?.onSessionInitialized()
-        }
-
         // After configuring, set this to the new configuration.
         self.configuration = config
       } catch {
@@ -267,7 +268,7 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
   public final func captureOutput(_ captureOutput: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
     switch captureOutput {
     case is AVCaptureVideoDataOutput:
-      onVideoFrame(sampleBuffer: sampleBuffer, orientation: connection.orientation)
+      onVideoFrame(sampleBuffer: sampleBuffer, orientation: connection.orientation, isMirrored: connection.isVideoMirrored)
     case is AVCaptureAudioDataOutput:
       onAudioFrame(sampleBuffer: sampleBuffer)
     default:
@@ -275,24 +276,49 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     }
   }
 
-  private final func onVideoFrame(sampleBuffer: CMSampleBuffer, orientation: Orientation) {
-    if let recordingSession, isRecording {
-      // Write the Video Buffer to the .mov/.mp4 file, this is the first timestamp if nothing has been recorded yet
-      recordingSession.appendBuffer(sampleBuffer, clock: captureSession.clock, type: .video)
+  private final func onVideoFrame(sampleBuffer: CMSampleBuffer, orientation: Orientation, isMirrored: Bool) {
+    if let recordingSession {
+      do {
+        // Write the Video Buffer to the .mov/.mp4 file
+        try recordingSession.append(buffer: sampleBuffer, ofType: .video)
+      } catch let error as CameraError {
+        delegate?.onError(error)
+      } catch {
+        delegate?.onError(.capture(.unknown(message: error.localizedDescription)))
+      }
     }
 
     if let delegate {
       // Call Frame Processor (delegate) for every Video Frame
-      let relativeBufferOrientation = orientation.relativeTo(orientation: outputOrientation)
-      delegate.onFrame(sampleBuffer: sampleBuffer, orientation: relativeBufferOrientation)
+      delegate.onFrame(sampleBuffer: sampleBuffer, orientation: orientation, isMirrored: isMirrored)
     }
   }
 
+    
+    private func fileSize(url: URL) -> Int64? {
+         do {
+             let fileAttributes = try FileManager.default.attributesOfItem(atPath: url.path)
+             if let fileSize = fileAttributes[.size] as? NSNumber {
+                 return fileSize.int64Value
+             }
+         } catch {
+             print("Error getting file size: \(error)")
+         }
+         return nil
+     }
+    
   private final func onAudioFrame(sampleBuffer: CMSampleBuffer) {
-    if let recordingSession, isRecording {
-      // Synchronize the Audio Buffer with the Video Session's time because it's two separate AVCaptureSessions
-      audioCaptureSession.synchronizeBuffer(sampleBuffer, toSession: captureSession)
-      recordingSession.appendBuffer(sampleBuffer, clock: audioCaptureSession.clock, type: .audio)
+    if let recordingSession {
+      do {
+        // Synchronize the Audio Buffer with the Video Session's time because it's two separate
+        // AVCaptureSessions, then write it to the .mov/.mp4 file
+        audioCaptureSession.synchronizeBuffer(sampleBuffer, toSession: captureSession)
+        try recordingSession.append(buffer: sampleBuffer, ofType: .audio)
+      } catch let error as CameraError {
+        delegate?.onError(error)
+      } catch {
+        delegate?.onError(.capture(.unknown(message: error.localizedDescription)))
+      }
     }
   }
 

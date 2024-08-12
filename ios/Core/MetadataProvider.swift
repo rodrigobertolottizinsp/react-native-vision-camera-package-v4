@@ -18,29 +18,55 @@ class MetadataProvider: NSObject, AVCapturePhotoFileDataRepresentationCustomizer
    */
   var locationProvider: LocationProvider?
 
+    private var artist: String?
+    private var software: String?
+    private var deviceString: String?
+    private var userComment: String?
+
+        func setMetadata(artist: String, software: String, deviceString: String, userComment: String) {
+      self.artist = artist
+      self.software = software
+      self.deviceString = deviceString
+      self.userComment = userComment
+    }
+    
   // MARK: - Photo Metadata
 
-  /**
-   Adds AVCapturePhoto's metadata dictionary
-   */
-  func replacementMetadata(for photo: AVCapturePhoto) -> [String: Any]? {
-    var properties = photo.metadata
-
-    // Add branding info
-    if var exifDictionary = properties[kCGImagePropertyExifDictionary as String] as? [String: Any] {
-      exifDictionary[kCGImagePropertyExifUserComment as String] = "Captured with VisionCamera by mrousavy"
-      properties[kCGImagePropertyExifDictionary as String] = exifDictionary
+    /**
+     Adds AVCapturePhoto's metadata dictionary
+     */
+    func replacementMetadata(for photo: AVCapturePhoto) -> [String: Any]? {
+      var properties = photo.metadata
+      // Add branding info
+      if var exifDictionary = properties[kCGImagePropertyExifDictionary as String] as? [String: Any] {
+        exifDictionary[kCGImagePropertyExifUserComment as String] = userComment
+        properties[kCGImagePropertyExifDictionary as String] = exifDictionary
+      }
+        
+    // Add branding info to TIFF dictionary
+    if var tiffDictionary = properties[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
+        tiffDictionary[kCGImagePropertyTIFFArtist as String] = artist
+        tiffDictionary[kCGImagePropertyTIFFSoftware as String] = software
+        tiffDictionary[kCGImagePropertyTIFFMake as String] = deviceString // Use an existing key
+        properties[kCGImagePropertyTIFFDictionary as String] = tiffDictionary
+    } else {
+        // If the TIFF dictionary does not exist, create it
+        properties[kCGImagePropertyTIFFDictionary as String] = [
+            kCGImagePropertyTIFFArtist as String: artist,
+            kCGImagePropertyTIFFSoftware as String: software,
+            kCGImagePropertyTIFFMake as String: deviceString
+        ]
     }
 
-    // Add GPS Location EXIF info
-    if let locationProvider,
-       let location = locationProvider.location {
-      let locationExif = location.toEXIF(heading: locationProvider.heading)
-      properties[kCGImagePropertyGPSDictionary as String] = locationExif
-    }
+      // Add GPS Location EXIF info
+      if let locationProvider,
+         let location = locationProvider.location {
+        let locationExif = location.toEXIF(heading: locationProvider.heading)
+        properties[kCGImagePropertyGPSDictionary as String] = locationExif
+      }
 
-    return properties
-  }
+      return properties
+    }
 
   // MARK: - Video Metadata
 

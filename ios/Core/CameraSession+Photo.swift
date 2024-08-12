@@ -14,7 +14,7 @@ extension CameraSession {
    Takes a photo.
    `takePhoto` is only available if `photo={true}`.
    */
-  func takePhoto(options: NSDictionary, promise: Promise) {
+  func takePhoto(options: TakePhotoOptions, promise: Promise) {
     // Run on Camera Queue
     CameraQueues.cameraQueue.async {
       // Get Photo Output configuration
@@ -60,36 +60,35 @@ extension CameraSession {
       }
 
       // red-eye reduction
-      if #available(iOS 12.0, *), let autoRedEyeReduction = options["enableAutoRedEyeReduction"] as? Bool {
-        photoSettings.isAutoRedEyeReductionEnabled = autoRedEyeReduction
-      }
+      photoSettings.isAutoRedEyeReductionEnabled = options.enableAutoRedEyeReduction
 
       // distortion correction
-      if #available(iOS 14.1, *), let enableAutoDistortionCorrection = options["enableAutoDistortionCorrection"] as? Bool {
-        photoSettings.isAutoContentAwareDistortionCorrectionEnabled = enableAutoDistortionCorrection
+      if #available(iOS 14.1, *) {
+        photoSettings.isAutoContentAwareDistortionCorrectionEnabled = options.enableAutoDistortionCorrection
       }
 
       // flash
-      if videoDeviceInput.device.isFlashAvailable, let flash = options["flash"] as? String {
-        guard let flashMode = AVCaptureDevice.FlashMode(withString: flash) else {
-          promise.reject(error: .parameter(.invalid(unionName: "FlashMode", receivedValue: flash)))
+      if options.flash != .off {
+        guard videoDeviceInput.device.hasFlash else {
+          // If user enabled flash, but the device doesn't have a flash, throw an error.
+          promise.reject(error: .capture(.flashNotAvailable))
           return
         }
-        photoSettings.flashMode = flashMode
       }
-
-      // shutter sound
-      let enableShutterSound = options["enableShutterSound"] as? Bool ?? true
-      let targetWidth = options["targetWidth"] as? Int ?? 0
-      let filePath = options["filePath"] as? String ?? ""
-      let aspectRatio = options["aspectRatio"] as? Double ?? 4/3
+      if videoDeviceInput.device.isFlashAvailable {
+        photoSettings.flashMode = options.flash.toFlashMode()
+      }
 
       // Actually do the capture!
       let photoCaptureDelegate = PhotoCaptureDelegate(promise: promise,
-                                                      enableShutterSound: enableShutterSound,
+                                                      enableShutterSound: options.enableShutterSound,
                                                       metadataProvider: self.metadataProvider,
-                                                      cameraSessionDelegate: self.delegate,
-                                                      targetWidth: targetWidth, filePath: filePath, aspectRatio: aspectRatio)
+                                                      path: options.path,
+                                                      artist: options.artist,
+                                                      userComment: options.userComment,
+                                                      software: options.software,
+                                                      deviceString: options.deviceString,
+                                                      cameraSessionDelegate: self.delegate)
       photoOutput.capturePhoto(with: photoSettings, delegate: photoCaptureDelegate)
 
       // Assume that `takePhoto` is always called with the same parameters, so prepare the next call too.

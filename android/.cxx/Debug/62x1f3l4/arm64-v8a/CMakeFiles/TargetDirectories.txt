@@ -1,0 +1,3 @@
+/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/arm64-v8a/CMakeFiles/VisionCamera.dir
+/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/arm64-v8a/CMakeFiles/rebuild_cache.dir

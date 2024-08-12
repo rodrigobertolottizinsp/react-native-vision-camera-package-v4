@@ -1,6 +1,0 @@
-/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/.cxx/Debug/1i3o4j4k/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/ReactAndroid/ReactAndroidConfig.cmake
-/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/.cxx/Debug/1i3o4j4k/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/ReactAndroid/ReactAndroidConfigVersion.cmake
-/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/.cxx/Debug/1i3o4j4k/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/fbjni/fbjniConfig.cmake
-/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/.cxx/Debug/1i3o4j4k/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/fbjni/fbjniConfigVersion.cmake
-/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/.cxx/Debug/1i3o4j4k/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/react-native-worklets-core/react-native-worklets-coreConfig.cmake
-/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/CMakeLists.txt

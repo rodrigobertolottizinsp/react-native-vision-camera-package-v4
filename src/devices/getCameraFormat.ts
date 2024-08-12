@@ -119,13 +119,14 @@ function filtersToFilterMap(filters: FormatFilter[]): FilterMap {
 export function getCameraFormat(device: CameraDevice, filters: FormatFilter[]): CameraDeviceFormat {
   // Combine filters into a single filter map for constant-time lookup
   const filter = filtersToFilterMap(filters)
-
+  
   let bestFormat = device.formats[0]
+  
   if (bestFormat == null)
     throw new CameraRuntimeError('device/invalid-device', `The given Camera Device (${device.id}) does not have any formats!`)
 
   // Compare each format using a point scoring system
-  for (const format of device.formats) {
+  for (const format of device.formats.filter(f => f.supportsDepthCapture === false)) {
     let leftPoints = 0
     let rightPoints = 0
 

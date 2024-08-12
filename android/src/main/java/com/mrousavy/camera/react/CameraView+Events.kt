@@ -6,12 +6,13 @@ import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
-import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.mrousavy.camera.core.CameraError
+import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.mrousavy.camera.core.CodeScannerFrame
 import com.mrousavy.camera.core.UnknownCameraError
 import com.mrousavy.camera.core.types.CodeType
+import com.mrousavy.camera.core.types.Orientation
 import com.mrousavy.camera.core.types.ShutterType
 
 fun CameraView.invokeOnInitialized() {
@@ -38,6 +39,22 @@ fun CameraView.invokeOnStopped() {
   this.sendEvent(event)
 }
 
+fun CameraView.invokeOnPreviewStarted() {
+  Log.i(CameraView.TAG, "invokeOnPreviewStarted()")
+
+  val surfaceId = UIManagerHelper.getSurfaceId(this)
+  val event = CameraPreviewStartedEvent(surfaceId, id)
+  this.sendEvent(event)
+}
+
+fun CameraView.invokeOnPreviewStopped() {
+  Log.i(CameraView.TAG, "invokeOnPreviewStopped()")
+
+  val surfaceId = UIManagerHelper.getSurfaceId(this)
+  val event = CameraPreviewStoppedEvent(surfaceId, id)
+  this.sendEvent(event)
+}
+
 fun CameraView.invokeOnShutter(type: ShutterType) {
   Log.i(CameraView.TAG, "invokeOnShutter($type)")
 
@@ -46,6 +63,28 @@ fun CameraView.invokeOnShutter(type: ShutterType) {
   data.putString("type", type.unionValue)
 
   val event = CameraShutterEvent(surfaceId, id, data)
+  this.sendEvent(event)
+}
+
+fun CameraView.invokeOnOutputOrientationChanged(outputOrientation: Orientation) {
+  Log.i(CameraView.TAG, "invokeOnOutputOrientationChanged($outputOrientation)")
+
+  val surfaceId = UIManagerHelper.getSurfaceId(this)
+  val data = Arguments.createMap()
+  data.putString("outputOrientation", outputOrientation.unionValue)
+
+  val event = CameraOutputOrientationChangedEvent(surfaceId, id, data)
+  this.sendEvent(event)
+}
+
+fun CameraView.invokeOnPreviewOrientationChanged(previewOrientation: Orientation) {
+  Log.i(CameraView.TAG, "invokeOnPreviewOrientationChanged($previewOrientation)")
+
+  val surfaceId = UIManagerHelper.getSurfaceId(this)
+  val data = Arguments.createMap()
+  data.putString("previewOrientation", previewOrientation.unionValue)
+
+  val event = CameraPreviewOrientationChangedEvent(surfaceId, id, data)
   this.sendEvent(event)
 }
 
@@ -76,13 +115,6 @@ fun CameraView.invokeOnViewReady() {
   this.sendEvent(event)
 }
 
-fun CameraView.invokeOnZoomChanged(zoom: Double) {
-  val event = Arguments.createMap()
-  event.putDouble("zoomFactor", zoom)
-  val reactContext = context as ReactContext
-  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "zoomChanged", event)
-}
-
 fun CameraView.invokeOnAverageFpsChanged(averageFps: Double) {
   Log.i(CameraView.TAG, "invokeOnAverageFpsChanged($averageFps)")
 
@@ -92,6 +124,13 @@ fun CameraView.invokeOnAverageFpsChanged(averageFps: Double) {
 
   val event = AverageFpsChangedEvent(surfaceId, id, data)
   this.sendEvent(event)
+}
+
+fun CameraView.invokeOnZoomChanged(zoom: Double) {
+  val event = Arguments.createMap()
+  event.putDouble("zoomFactor", zoom)
+  val reactContext = context as ReactContext
+  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "zoomChanged", event)
 }
 
 fun CameraView.invokeOnCodeScanned(barcodes: List<Barcode>, scannerFrame: CodeScannerFrame) {

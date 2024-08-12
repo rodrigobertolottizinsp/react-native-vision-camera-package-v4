@@ -7,6 +7,11 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Callback
 import com.mrousavy.camera.core.CameraError
 import com.mrousavy.camera.core.MicrophonePermissionError
+import com.mrousavy.camera.core.cancelRecording
+import com.mrousavy.camera.core.pauseRecording
+import com.mrousavy.camera.core.resumeRecording
+import com.mrousavy.camera.core.startRecording
+import com.mrousavy.camera.core.stopRecording
 import com.mrousavy.camera.core.types.RecordVideoOptions
 import com.mrousavy.camera.core.types.Video
 import com.mrousavy.camera.react.utils.makeErrorMap
@@ -27,12 +32,11 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
     map.putInt("height", video.size.height)
     onRecordCallback(map, null)
   }
-
   val onError = { error: CameraError ->
     val errorMap = makeErrorMap(error.code, error.message)
     onRecordCallback(null, errorMap)
   }
-  cameraSession.startRecording(audio, options, callback, onError, options.filePath)
+  cameraSession.startRecording(audio, options, callback, onError)
 }
 
 fun CameraView.pauseRecording() {

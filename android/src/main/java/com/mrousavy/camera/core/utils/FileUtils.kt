@@ -1,29 +1,39 @@
 package com.mrousavy.camera.core.utils
 
-import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Size
+import com.mrousavy.camera.core.InvalidPathError
 import java.io.File
 import java.io.FileOutputStream
 
 class FileUtils {
-    companion object {
-        fun createFile(context: Context, filePath: String): File {
-            val file = File(filePath)
-            if (!file.parentFile.exists()) {
-                file.parentFile.mkdirs() // Create directories if they don't exist
-            }
-            return file
-        }
+  companion object {
+    fun getDirectory(path: String?): File {
+      if (path == null) {
+        throw InvalidPathError("null")
+      }
+      val file = File(path)
+      if (!file.isDirectory) {
+        throw InvalidPathError(path)
+      }
+      return file
+    }
 
-      fun createTempFile(context: Context, extension: String): File =
-          File.createTempFile("mrousavy-", extension, context.cacheDir).also {
-            it.deleteOnExit()
-          }
-
-      fun writeBitmapTofile(bitmap: Bitmap, file: File, quality: Int = 100) {
-        FileOutputStream(file).use { stream ->
-          bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
-        }
+    fun writeBitmapTofile(bitmap: Bitmap, file: File, quality: Int) {
+      FileOutputStream(file).use { stream ->
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
       }
     }
+
+    fun getImageSize(imagePath: String): Size {
+      val bitmapOptions = BitmapFactory.Options().also {
+        it.inJustDecodeBounds = true
+      }
+      BitmapFactory.decodeFile(imagePath, bitmapOptions)
+      val width = bitmapOptions.outWidth
+      val height = bitmapOptions.outHeight
+      return Size(width, height)
+    }
+  }
 }

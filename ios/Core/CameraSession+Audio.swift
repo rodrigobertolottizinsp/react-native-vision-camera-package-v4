@@ -43,6 +43,8 @@ extension CameraSession {
       VisionLogger.log(level: .info, message: "Audio Session activated!")
     } catch let error as NSError {
       VisionLogger.log(level: .error, message: "Failed to activate audio session! Error \(error.code): \(error.description)")
+//        throw CameraError.capture(.microphoneUnavailable)
+
       switch error.code {
       case 561_017_449:
         throw CameraError.session(.audioInUseByOtherApp)
@@ -79,6 +81,7 @@ extension CameraSession {
       let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
       if options.contains(.shouldResume) {
         // Try resuming if possible
+        let isRecording = recordingSession != nil
         if isRecording {
           CameraQueues.audioQueue.async {
             VisionLogger.log(level: .info, message: "Resuming interrupted Audio Session...")

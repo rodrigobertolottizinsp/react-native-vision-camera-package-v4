@@ -6,6 +6,7 @@ import type { Frame } from './Frame'
 import type { ISharedValue } from 'react-native-worklets-core'
 import type { SkImage } from '@shopify/react-native-skia'
 import type { OutputOrientation } from './OutputOrientation'
+import type { Orientation } from './Orientation'
 
 export interface ReadonlyFrameProcessor {
   frameProcessor: (frame: Frame) => void
@@ -15,6 +16,7 @@ export interface DrawableFrameProcessor {
   frameProcessor: (frame: Frame) => void
   type: 'drawable-skia'
   offscreenTextures: ISharedValue<SkImage[]>
+  previewOrientation: ISharedValue<Orientation>
 }
 
 export interface OnShutterEvent {
@@ -182,11 +184,16 @@ export interface CameraProps extends ViewProps {
    */
   androidPreviewViewType?: 'surface-view' | 'texture-view'
   /**
-   * Specify the frames per second this camera should stream frames at.
+   * Specify a the number of frames per second this camera should stream frames at.
+   *
+   * - If `fps` is a single number, the Camera will be streaming at a fixed FPS value.
+   * - If `fps` is a tuple/array, the Camera will be free to choose a FPS value between `minFps` and `maxFps`,
+   * depending on current lighting conditions. Allowing a lower `minFps` value can result in better photos
+   * and videos, as the Camera can take more time to properly receive light for frames.
    *
    * Make sure the given {@linkcode format} can stream at the target {@linkcode fps} value (see {@linkcode CameraDeviceFormat.minFps format.minFps} and {@linkcode CameraDeviceFormat.maxFps format.maxFps}).
    */
-  fps?: number
+  fps?: number | [minFps: number, maxFps: number]
   /**
    * Enables or disables HDR Video Streaming for Preview, Video and Frame Processor via a 10-bit wide-color pixel format.
    *
@@ -280,10 +287,6 @@ export interface CameraProps extends ViewProps {
    *
    * - `'preview'`: Use the same orientation as the preview view. If the device rotation is locked, the user cannot take photos or videos in different orientations.
    * - `'device'`: Use whatever orientation the device is held in, even if the preview view is not rotated to that orientation. If the device rotation is locked, the user can still rotate his phone to take photos or videos in different orientations than the preview view.
-   * - `'portrait'`: Force-rotate to **0°** (home-button at the bottom)
-   * - `'landscape-left'`: Force-rotate to **90°** (home-button on the left)
-   * - `'portrait-upside-down'`: Force-rotate to **180°** (home-button at the top)
-   * - `'landscape-right'`: Force-rotate to **270°** (home-button on the right)
    *
    * @note Preview orientation will not be affected by this property, as it is always dependant on screen orientation
    * @note Frame Processors will not be affected by this property, as their buffer size (respective to {@linkcode Frame.orientation}) is always the same
@@ -291,6 +294,15 @@ export interface CameraProps extends ViewProps {
    * @default 'device'
    */
   outputOrientation?: OutputOrientation
+  /**
+   * Enables or disables mirroring of outputs alongside the vertical axis.
+   *
+   * Mirroring only affects the photo-, video-, or snapshot-output, but not preview.
+   * The Preview is always mirrored for front cameras, and not mirrored for back cameras.
+   *
+   * @default false (back camera), true (front camera)
+   */
+  isMirrored?: boolean
 
   //#region Events
   /**
@@ -298,24 +310,63 @@ export interface CameraProps extends ViewProps {
    */
   onError?: (error: CameraRuntimeError) => void
   /**
-   * Called when the camera session was successfully initialized. This will get called everytime a new device is set.
+   * Called when the camera session was successfully initialized and is ready for capture.
+   *
+   * At this point, the Camera `ref` can be used and methods like `takePhoto(..)` can be called.
+   *
+   * This is called everytime the {@linkcode device} or one of the outputs changes.
    */
   onInitialized?: () => void
   onZoomChanged: (number) => void
   /**
-   * Called when the camera started the session (`isActive={true}`)
+   * Called when the camera started the session. (`isActive={true}`)
+   *
+   * At this point, outputs can start receiving frames from the Camera, but might not have received any yet.
    */
   onStarted?: () => void
   /**
-   * Called when the camera stopped the session (`isActive={false}`)
+   * Called when the camera stopped the session. (`isActive={false}`)
+   *
+   * At this point, outputs will stop receiving frames from the Camera.
    */
   onStopped?: () => void
+  /**
+   * Called when the Preview View has received it's first frame and is now started.
+   *
+   * @note This will only be called if {@linkcode preview} is true, and no Skia Frame Processor is used
+   */
+  onPreviewStarted?: () => void
+  /**
+   * Called when the Preview View has stoppped streaming frames and is now stopped.
+   *
+   * @note This will only be called if {@linkcode preview} is true, and no Skia Frame Processor is used
+   */
+  onPreviewStopped?: () => void
   /**
    * Called just before a photo or snapshot is captured.
    *
    * Inside this callback you can play a custom shutter sound or show visual feedback to the user.
    */
   onShutter?: (event: OnShutterEvent) => void
+  /**
+   * Called whenever the output orientation changed.
+   * This might happen even if the screen/interface rotation is locked.
+   *
+   * @see See ["Orientation"](https://react-native-vision-camera.com/docs/guides/orientation)
+   */
+  onOutputOrientationChanged?: (outputOrientation: Orientation) => void
+  /**
+   * Called whenever the preview orientation changed.
+   * This will happen whenever the screen/interface rotates.
+   *
+   * @see See ["Orientation"](https://react-native-vision-camera.com/docs/guides/orientation)
+   */
+  onPreviewOrientationChanged?: (previewOrientation: Orientation) => void
+  /**
+   * Called whenever the target UI rotation/orientation changes.
+   * @param uiRotation The degrees that UI elements need to be rotated by to appear up-right.
+   */
+  onUIRotationChanged?: (uiRotation: number) => void
   /**
    * A worklet which will be called for every frame the Camera "sees".
    *
@@ -346,6 +397,7 @@ export interface CameraProps extends ViewProps {
    * })
    *
    * return <Camera {...props} codeScanner={codeScanner} />
+   * ```
    */
   codeScanner?: CodeScanner
   //#endregion

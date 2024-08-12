@@ -1,0 +1,4 @@
+/Users/rodrigobertolotti/Library/Android/sdk/cmake/3.22.1/bin/ninja \
+  -C \
+  /Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/arm64-v8a \
+  VisionCamera

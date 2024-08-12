@@ -20,7 +20,7 @@ import UIKit
 
 // MARK: - CameraView
 
-public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollectorDelegate {
+public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegate, FpsSampleCollectorDelegate {
   // pragma MARK: React Properties
 
   // props that require reconfiguring
@@ -28,6 +28,7 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
   @objc var enableDepthData = false
   @objc var enablePortraitEffectsMatteDelivery = false
   @objc var enableBufferCompression = false
+  @objc var isMirrored = false
 
   // use cases
   @objc var photo = false
@@ -45,17 +46,13 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
 
   // props that require format reconfiguring
   @objc var format: NSDictionary?
-  @objc var fps: NSNumber?
+  @objc var minFps: NSNumber?
+  @objc var maxFps: NSNumber?
   @objc var videoHdr = false
   @objc var photoHdr = false
   @objc var photoQualityBalance: NSString?
   @objc var lowLightBoost = false
   @objc var outputOrientation: NSString?
-  @objc var orientation: NSString?
-  @objc var videoMode = false
-  @objc var maxFileSize = 2000000
-
-  var lastOrientation:UIInterfaceOrientation
 
   // other props
   @objc var isActive = false
@@ -63,24 +60,26 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
   @objc var zoom: NSNumber = 1.0 // in "factor"
   @objc var exposure: NSNumber = 0.0
   @objc var videoStabilizationMode: NSString?
-  @objc var onZoomChanged: RCTDirectEventBlock?
   @objc var resizeMode: NSString = "cover" {
     didSet {
       updatePreview()
     }
   }
-  
-  var tapGestureRecognizer: UITapGestureRecognizer?
 
   // events
-  @objc var onInitialized: RCTDirectEventBlock?
-  @objc var onError: RCTDirectEventBlock?
-  @objc var onStarted: RCTDirectEventBlock?
-  @objc var onStopped: RCTDirectEventBlock?
-  @objc var onShutter: RCTDirectEventBlock?
-  @objc var onViewReady: RCTDirectEventBlock?
-  @objc var onAverageFpsChanged: RCTDirectEventBlock?
-  @objc var onCodeScanned: RCTDirectEventBlock?
+  @objc var onInitializedEvent: RCTDirectEventBlock?
+  @objc var onErrorEvent: RCTDirectEventBlock?
+  @objc var onStartedEvent: RCTDirectEventBlock?
+  @objc var onStoppedEvent: RCTDirectEventBlock?
+  @objc var onPreviewStartedEvent: RCTDirectEventBlock?
+  @objc var onPreviewStoppedEvent: RCTDirectEventBlock?
+  @objc var onShutterEvent: RCTDirectEventBlock?
+  @objc var onPreviewOrientationChangedEvent: RCTDirectEventBlock?
+  @objc var onOutputOrientationChangedEvent: RCTDirectEventBlock?
+  @objc var onViewReadyEvent: RCTDirectEventBlock?
+  @objc var onAverageFpsChangedEvent: RCTDirectEventBlock?
+  @objc var onCodeScannedEvent: RCTDirectEventBlock?
+  @objc var onZoomChanged: RCTDirectEventBlock?
 
   // zoom
   @objc var enableZoomGesture = false {
@@ -93,29 +92,30 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
     }
   }
 
-  // pragma MARK: Internal Properties
-  var cameraSession = CameraSession()
-  var previewView: PreviewView?
-  var isMounted = false
   #if VISION_CAMERA_ENABLE_FRAME_PROCESSORS
     @objc public var frameProcessor: FrameProcessor?
   #endif
 
+  // pragma MARK: Internal Properties
+  var cameraSession = CameraSession()
+  var previewView: PreviewView?
+  var isMounted = false
+  private var currentConfigureCall: DispatchTime?
+  private let fpsSampleCollector = FpsSampleCollector()
+
   // CameraView+Zoom
   var pinchGestureRecognizer: UIPinchGestureRecognizer?
   var pinchScaleOffset: CGFloat = 1.0
-  var snapshotOnFrameListeners: [(_: CMSampleBuffer) -> Void] = []
-  private var currentConfigureCall: DispatchTime?
-  private let fpsSampleCollector = FpsSampleCollector()
+
+  // CameraView+TakeSnapshot
+  var latestVideoFrame: Snapshot?
 
   // pragma MARK: Setup
 
   override public init(frame: CGRect) {
     super.init(frame: frame)
     cameraSession.delegate = self
-    addTapGestureRecognizer()
     fpsSampleCollector.delegate = self
-    NotificationCenter.default.addObserver(self, selector: #selector(orientationChanged), name: UIDevice.orientationDidChangeNotification, object: nil)
     updatePreview()
   }
 
@@ -131,7 +131,7 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
       fpsSampleCollector.start()
       if !isMounted {
         isMounted = true
-        onViewReady?(nil)
+        onViewReadyEvent?(nil)
       }
     } else {
       fpsSampleCollector.stop()
@@ -194,6 +194,7 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
 
       // Input Camera Device
       config.cameraId = cameraId as? String
+      config.isMirrored = isMirrored
 
       // Photo
       if photo {
@@ -257,7 +258,8 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
       }
 
       // Side-Props
-      config.fps = fps?.int32Value
+      config.minFps = minFps?.int32Value
+      config.maxFps = maxFps?.int32Value
       config.enableLowLightBoost = lowLightBoost
       config.torch = try Torch(jsValue: torch)
 
@@ -269,9 +271,6 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
 
       // isActive
       config.isActive = isActive
-
-      config.videoMode = videoMode
-      config.maxFileSize = maxFileSize
     }
 
     // Store `zoom` offset for native pinch-gesture
@@ -287,6 +286,7 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
     if preview && previewView == nil {
       // Create PreviewView and add it
       previewView = cameraSession.createPreviewView(frame: frame)
+      previewView!.delegate = self
       addSubview(previewView!)
     } else if !preview && previewView != nil {
       // Remove PreviewView and destroy it
@@ -305,9 +305,6 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
 
   func onError(_ error: CameraError) {
     VisionLogger.log(level: .error, message: "Invoking onError(): \(error.message)")
-    guard let onError = onError else {
-      return
-    }
 
     var causeDictionary: [String: Any]?
     if case let .unknown(_, cause) = error,
@@ -319,7 +316,7 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
         "details": cause.userInfo,
       ]
     }
-    onError([
+    onErrorEvent?([
       "code": error.code,
       "message": error.message,
       "cause": causeDictionary ?? NSNull(),
@@ -327,123 +324,70 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
   }
 
   func onSessionInitialized() {
-    VisionLogger.log(level: .info, message: "Camera initialized!")
-    guard let onInitialized = onInitialized else {
-      return
-    }
-    onInitialized([:])
+    onInitializedEvent?([:])
   }
 
   func onCameraStarted() {
-    VisionLogger.log(level: .info, message: "Camera started!")
-    guard let onStarted = onStarted else {
-      return
-    }
-    onStarted([:])
+    onStartedEvent?([:])
   }
 
   func onCameraStopped() {
-    VisionLogger.log(level: .info, message: "Camera stopped!")
-    guard let onStopped = onStopped else {
-      return
-    }
-    onStopped([:])
+    onStoppedEvent?([:])
+  }
+
+  func onPreviewStarted() {
+    onPreviewStartedEvent?([:])
+  }
+
+  func onPreviewStopped() {
+    onPreviewStoppedEvent?([:])
   }
 
   func onCaptureShutter(shutterType: ShutterType) {
-    guard let onShutter = onShutter else {
-      return
-    }
-    onShutter([
+    onShutterEvent?([
       "type": shutterType.jsValue,
     ])
   }
 
-  func onFrame(sampleBuffer: CMSampleBuffer, orientation: Orientation) {
+  func onOutputOrientationChanged(_ outputOrientation: Orientation) {
+    onOutputOrientationChangedEvent?([
+      "outputOrientation": outputOrientation.jsValue,
+    ])
+  }
+
+  func onPreviewOrientationChanged(_ previewOrientation: Orientation) {
+    onPreviewOrientationChangedEvent?([
+      "previewOrientation": previewOrientation.jsValue,
+    ])
+  }
+
+  func onFrame(sampleBuffer: CMSampleBuffer, orientation: Orientation, isMirrored: Bool) {
+    // Update latest frame that can be used for snapshot capture
+    latestVideoFrame = Snapshot(imageBuffer: sampleBuffer, orientation: orientation)
+
+    // Notify FPS Collector that we just had a Frame
     fpsSampleCollector.onTick()
 
     #if VISION_CAMERA_ENABLE_FRAME_PROCESSORS
       if let frameProcessor = frameProcessor {
         // Call Frame Processor
-        let frame = Frame(buffer: sampleBuffer, orientation: orientation.imageOrientation)
+        let frame = Frame(buffer: sampleBuffer,
+                          orientation: orientation.imageOrientation,
+                          isMirrored: isMirrored)
         frameProcessor.call(frame)
       }
     #endif
-
-    for callback in snapshotOnFrameListeners {
-      callback(sampleBuffer)
-    }
-    snapshotOnFrameListeners.removeAll()
   }
 
   func onCodeScanned(codes: [CameraSession.Code], scannerFrame: CameraSession.CodeScannerFrame) {
-    guard let onCodeScanned = onCodeScanned else {
-      return
-    }
-    onCodeScanned([
+    onCodeScannedEvent?([
       "codes": codes.map { $0.toJSValue() },
       "frame": scannerFrame.toJSValue(),
     ])
   }
 
-      //ztesting focus
-    @objc final func onTap(_ gesture: UITapGestureRecognizer) {
-        let tapLocation = gesture.location(in: self.previewView)
-        do {
-            let normalized = self.previewView?.captureDevicePointConverted(fromLayerPoint: tapLocation) ?? CGPoint(x: 0.5, y: 0.5)
-            try cameraSession.focus(point: normalized)
-
-            showFocusIndicator(at: tapLocation)
-
-        } catch {
-            // Handle the error appropriately
-            print("Error focusing camera: \(error)")
-        }
-        // Handle tap gesture logic here
-    }
-
-  func showFocusIndicator(at point: CGPoint) {
-          // Remove any existing focus indicator
-          // Create a new focus indicator view
-          let focusIndicatorSize: CGFloat = 60.0
-          let focusIndicatorFrame = CGRect(x: point.x - focusIndicatorSize/2, y: point.y - focusIndicatorSize/2, width: focusIndicatorSize, height: focusIndicatorSize)
-          let newFocusIndicatorView = UIView(frame: focusIndicatorFrame)
-          newFocusIndicatorView.layer.borderColor = UIColor(red: 242/255, green: 166/255, blue: 27/255, alpha: 0.5).cgColor
-          newFocusIndicatorView.layer.borderWidth = 3.0
-          newFocusIndicatorView.layer.cornerRadius = 7.5
-
-          // Add the focus indicator to the camera view
-          self.previewView?.addSubview(newFocusIndicatorView)
-
-          // Animate the focus indicator
-          UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseInOut, animations: {
-              newFocusIndicatorView.alpha = 0.0
-          }) { _ in
-              newFocusIndicatorView.removeFromSuperview()
-          }
-
-          // Save the reference to the new focus indicator view
-      }
-      
-      func addTapGestureRecognizer() {
-          removeTapGestureRecognizer()
-          tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(onTap(_:)))
-          
-          addGestureRecognizer(tapGestureRecognizer!)
-      }
-
-      func removeTapGestureRecognizer() {
-          if let tapGestureRecognizer = tapGestureRecognizer {
-              removeGestureRecognizer(tapGestureRecognizer)
-              self.tapGestureRecognizer = nil
-          }
-      }
-
   func onAverageFpsChanged(averageFps: Double) {
-    guard let onAverageFpsChanged else {
-      return
-    }
-    onAverageFpsChanged([
+    onAverageFpsChangedEvent?([
       "averageFps": averageFps,
     ])
   }

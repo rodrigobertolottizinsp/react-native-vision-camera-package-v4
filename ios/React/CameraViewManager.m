@@ -29,6 +29,7 @@ RCT_EXPORT_VIEW_PROPERTY(cameraId, NSString);
 RCT_EXPORT_VIEW_PROPERTY(enableDepthData, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(enablePortraitEffectsMatteDelivery, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(enableBufferCompression, BOOL);
+RCT_EXPORT_VIEW_PROPERTY(isMirrored, BOOL);
 // use cases
 RCT_EXPORT_VIEW_PROPERTY(preview, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(photo, BOOL);
@@ -38,7 +39,8 @@ RCT_EXPORT_VIEW_PROPERTY(enableFrameProcessor, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(enableLocation, BOOL);
 // device format
 RCT_EXPORT_VIEW_PROPERTY(format, NSDictionary);
-RCT_EXPORT_VIEW_PROPERTY(fps, NSNumber);
+RCT_EXPORT_VIEW_PROPERTY(minFps, NSNumber);
+RCT_EXPORT_VIEW_PROPERTY(maxFps, NSNumber);
 RCT_EXPORT_VIEW_PROPERTY(videoHdr, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(photoHdr, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(photoQualityBalance, NSString);
@@ -53,17 +55,21 @@ RCT_EXPORT_VIEW_PROPERTY(enableZoomGesture, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(outputOrientation, NSString);
 RCT_EXPORT_VIEW_PROPERTY(resizeMode, NSString);
 // Camera View Events
-RCT_EXPORT_VIEW_PROPERTY(onError, RCTDirectEventBlock);
-RCT_EXPORT_VIEW_PROPERTY(onInitialized, RCTDirectEventBlock);
-RCT_EXPORT_VIEW_PROPERTY(onStarted, RCTDirectEventBlock);
-RCT_EXPORT_VIEW_PROPERTY(onStopped, RCTDirectEventBlock);
-RCT_EXPORT_VIEW_PROPERTY(onShutter, RCTDirectEventBlock);
-RCT_EXPORT_VIEW_PROPERTY(onViewReady, RCTDirectEventBlock);
-RCT_EXPORT_VIEW_PROPERTY(onAverageFpsChanged, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onError, onErrorEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onInitialized, onInitializedEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onStarted, onStartedEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onStopped, onStoppedEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onPreviewStarted, onPreviewStartedEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onPreviewStopped, onPreviewStoppedEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onShutter, onShutterEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onOutputOrientationChanged, onOutputOrientationChangedEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onPreviewOrientationChanged, onPreviewOrientationChangedEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onViewReady, onViewReadyEvent, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onAverageFpsChanged, onAverageFpsChangedEvent, RCTDirectEventBlock);
 // Code Scanner
 RCT_EXPORT_VIEW_PROPERTY(codeScannerOptions, NSDictionary);
-RCT_EXPORT_VIEW_PROPERTY(onCodeScanned, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(onZoomChanged, RCTDirectEventBlock);
+RCT_REMAP_VIEW_PROPERTY(onCodeScanned, onCodeScannedEvent, RCTDirectEventBlock);
 
 // Camera View Functions
 RCT_EXTERN_METHOD(startRecording

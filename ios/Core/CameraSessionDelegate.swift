@@ -34,9 +34,17 @@ protocol CameraSessionDelegate: AnyObject {
    */
   func onCaptureShutter(shutterType: ShutterType)
   /**
+   Called whenever the output orientation of the [CameraSession] changes.
+   */
+  func onOutputOrientationChanged(_ outputOrientation: Orientation)
+  /**
+   Called whenever the preview orientation of the [CameraSession]/[PreviewView] changes.
+   */
+  func onPreviewOrientationChanged(_ previewOrientation: Orientation)
+  /**
    Called for every frame (if video or frameProcessor is enabled)
    */
-  func onFrame(sampleBuffer: CMSampleBuffer, orientation: Orientation)
+  func onFrame(sampleBuffer: CMSampleBuffer, orientation: Orientation, isMirrored: Bool)
   /**
    Called whenever a QR/Barcode has been scanned. Only if the CodeScanner Output is enabled
    */

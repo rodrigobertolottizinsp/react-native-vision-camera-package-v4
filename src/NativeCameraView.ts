@@ -3,6 +3,7 @@ import { requireNativeComponent } from 'react-native'
 import type { ErrorWithCause } from './CameraError'
 import type { CameraProps, OnShutterEvent } from './types/CameraProps'
 import type { Code, CodeScanner, CodeScannerFrame } from './types/CodeScanner'
+import type { Orientation } from './types/Orientation'
 
 export interface OnCodeScannedEvent {
   codes: Code[]
@@ -16,14 +17,31 @@ export interface OnErrorEvent {
 export interface AverageFpsChangedEvent {
   averageFps: number
 }
+export interface OutputOrientationChangedEvent {
+  outputOrientation: Orientation
+}
+export interface PreviewOrientationChangedEvent {
+  previewOrientation: Orientation
+}
 export type NativeCameraViewProps = Omit<
   CameraProps,
-  'device' | 'onInitialized' | 'onError' | 'onShutter' | 'frameProcessor' | 'onZoomChanged' | 'codeScanner'
+  | 'device'
+  | 'onInitialized'
+  | 'onError'
+  | 'onShutter'
+  | 'onOutputOrientationChanged'
+  | 'onPreviewOrientationChanged'
+  | 'frameProcessor'
+  | 'codeScanner'
+  | 'fps'
+  | 'onZoomChanged'
 > & {
   // private intermediate props
   cameraId: string
   enableFrameProcessor: boolean
   codeScannerOptions?: Omit<CodeScanner, 'onCodeScanned'>
+  minFps?: number
+  maxFps?: number
   // private events
   onViewReady: (event: NativeSyntheticEvent<void>) => void
   onAverageFpsChanged?: (event: NativeSyntheticEvent<AverageFpsChangedEvent>) => void
@@ -33,7 +51,11 @@ export type NativeCameraViewProps = Omit<
   onCodeScanned?: (event: NativeSyntheticEvent<OnCodeScannedEvent>) => void
   onStarted?: (event: NativeSyntheticEvent<void>) => void
   onStopped?: (event: NativeSyntheticEvent<void>) => void
+  onPreviewStarted?: (event: NativeSyntheticEvent<void>) => void
+  onPreviewStopped?: (event: NativeSyntheticEvent<void>) => void
   onShutter?: (event: NativeSyntheticEvent<OnShutterEvent>) => void
+  onOutputOrientationChanged?: (event: NativeSyntheticEvent<OutputOrientationChangedEvent>) => void
+  onPreviewOrientationChanged?: (event: NativeSyntheticEvent<PreviewOrientationChangedEvent>) => void
 }
 
 // requireNativeComponent automatically resolves 'CameraView' to 'CameraViewManager'

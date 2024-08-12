@@ -1,8 +1,0 @@
-{
-  "enabled": true,
-  "prefabPath": "/Users/rodrigobertolotti/.gradle/caches/modules-2/files-2.1/com.google.prefab/cli/2.0.0/f2702b5ca13df54e3ca92f29d6b403fb6285d8df/cli-2.0.0-all.jar",
-  "packages": [
-    "/Users/rodrigobertolotti/.gradle/caches/transforms-3/524c60072bcd5ecc90651ecae64adfe4/transformed/jetified-react-android-0.71.4-debug/prefab",
-    "/Users/rodrigobertolotti/.gradle/caches/transforms-3/2b9d6b0569543331508a4ca012fd8e16/transformed/jetified-fbjni-0.3.0/prefab"
-  ]
-}

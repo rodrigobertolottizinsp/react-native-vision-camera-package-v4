@@ -1,5 +1,5 @@
 {
-  "installationFolder": "/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/build/intermediates/prefab_package/release/prefab",
+  "installationFolder": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/build/intermediates/prefab_package/release/prefab",
   "gradlePath": ":react-native-vision-camera",
   "packageInfo": {
     "packageName": "react-native-vision-camera",
@@ -8,7 +8,7 @@
     "modules": [
       {
         "moduleName": "VisionCamera",
-        "moduleHeaders": "/Users/rodrigobertolotti/zInspector/react-native-vision-camera/package/android/build/headers/visioncamera",
+        "moduleHeaders": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/build/headers/visioncamera",
         "moduleExportLibraries": [],
         "abis": []
       }

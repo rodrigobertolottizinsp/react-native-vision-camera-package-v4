@@ -1,0 +1,35 @@
+{
+  "buildFiles": [
+    "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/ReactAndroid/ReactAndroidConfig.cmake",
+    "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/ReactAndroid/ReactAndroidConfigVersion.cmake",
+    "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/fbjni/fbjniConfig.cmake",
+    "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/fbjni/fbjniConfigVersion.cmake",
+    "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/rodrigobertolotti/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/arm64-v8a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/rodrigobertolotti/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/62x1f3l4/arm64-v8a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "VisionCamera::@6890427a1f51a3e7e1df": {
+      "artifactName": "VisionCamera",
+      "abi": "arm64-v8a",
+      "output": "/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/build/intermediates/cxx/Debug/62x1f3l4/obj/arm64-v8a/libVisionCamera.so",
+      "runtimeFiles": [
+        "/Users/rodrigobertolotti/.gradle/caches/transforms-3/137963b22284a6cc1c4d09531737d050/transformed/jetified-react-android-0.73.8-debug/prefab/modules/jsi/libs/android.arm64-v8a/libjsi.so",
+        "/Users/rodrigobertolotti/.gradle/caches/transforms-3/137963b22284a6cc1c4d09531737d050/transformed/jetified-react-android-0.73.8-debug/prefab/modules/reactnativejni/libs/android.arm64-v8a/libreactnativejni.so",
+        "/Users/rodrigobertolotti/.gradle/caches/transforms-3/dcf9abb567813a671b53ced0a9a4d612/transformed/jetified-fbjni-0.5.1/prefab/modules/fbjni/libs/android.arm64-v8a/libfbjni.so"
+      ]
+    }
+  }
+}
