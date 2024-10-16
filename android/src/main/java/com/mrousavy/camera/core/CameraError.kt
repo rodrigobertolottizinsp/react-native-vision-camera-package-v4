@@ -37,6 +37,12 @@ class MicrophonePermissionError :
     "microphone-permission-denied",
     "The Microphone permission was denied! If you want to record Video without sound, pass `audio={false}`."
   )
+class MicrophoneUnavailableError :
+  CameraError(
+    "capture",
+    "microphone-unavailable",
+    "The Microphone is unavailable or in use by another app.`."
+  )
 class LocationPermissionError :
   CameraError(
     "permission",

@@ -1,12 +1,16 @@
 package com.mrousavy.camera.react
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Callback
 import com.mrousavy.camera.core.CameraError
 import com.mrousavy.camera.core.MicrophonePermissionError
+import com.mrousavy.camera.core.MicrophoneUnavailableError
 import com.mrousavy.camera.core.cancelRecording
 import com.mrousavy.camera.core.pauseRecording
 import com.mrousavy.camera.core.resumeRecording
@@ -24,6 +28,12 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
     }
   }
 
+  // Check if the microphone is available
+  if (!isMicrophoneAvailable(context)) {
+    throw MicrophoneUnavailableError()
+    return
+  }
+
   val callback = { video: Video ->
     val map = Arguments.createMap()
     map.putString("path", video.path)
@@ -37,6 +47,16 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
     onRecordCallback(null, errorMap)
   }
   cameraSession.startRecording(audio, options, callback, onError)
+}
+
+fun isMicrophoneAvailable(context: Context): Boolean {
+  val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+  return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    !audioManager.isMicrophoneMute
+  } else {
+    // For devices running versions lower than Marshmallow
+    true // Assume microphone is available
+  }
 }
 
 fun CameraView.pauseRecording() {
