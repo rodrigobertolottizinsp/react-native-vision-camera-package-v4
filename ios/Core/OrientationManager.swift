@@ -158,18 +158,36 @@ final class OrientationManager {
   }
 
   private func startDeviceOrientationListener() {
-    stopDeviceOrientationListener()
-    if motionManager.isAccelerometerAvailable {
-      motionManager.accelerometerUpdateInterval = 0.2
-      motionManager.startAccelerometerUpdates(to: operationQueue) { accelerometerData, error in
-        if let error {
-          VisionLogger.log(level: .error, message: "Failed to get Accelerometer data! \(error)")
-        }
-        if let accelerometerData {
-          self.deviceOrientation = accelerometerData.deviceOrientation
-        }
+      stopDeviceOrientationListener()
+      if motionManager.isAccelerometerAvailable {
+          motionManager.accelerometerUpdateInterval = 0.2
+          motionManager.startAccelerometerUpdates(to: operationQueue) { accelerometerData, error in
+              if let error = error {
+                  VisionLogger.log(level: .error, message: "Failed to get Accelerometer data! \(error)")
+                  return
+              }
+              
+              guard let accelerometerData = accelerometerData else { return }
+              
+              let x = accelerometerData.acceleration.x
+              let y = accelerometerData.acceleration.y
+              let z = accelerometerData.acceleration.z
+              
+              // Determine if the device is in landscape and facing down
+              if abs(z) > 0.6 { // Close to -1 means face-down; 0.8 is a threshold
+                  if abs(x) > abs(y) {
+                      // Landscape mode: check the x-axis to determine left or right
+                      self.deviceOrientation = x > 0 ? .landscapeRight : .landscapeLeft
+                  } else {
+                      // If y > x, it's in portrait orientation
+                      self.deviceOrientation = y > 0 ? .portraitUpsideDown : .portrait
+                  }
+              } else {
+                  // Device is not face-down, fall back to standard orientation
+                  self.deviceOrientation = accelerometerData.deviceOrientation
+              }
+          }
       }
-    }
   }
 
   private func stopDeviceOrientationListener() {
