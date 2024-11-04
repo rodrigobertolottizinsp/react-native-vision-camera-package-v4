@@ -30,7 +30,12 @@ suspend fun CameraSession.takePhoto(options: TakePhotoOptions): Photo {
     enableShutterSound,
     metadataProvider,
     callback,
-    CameraQueues.cameraExecutor
+    CameraQueues.cameraExecutor,
+    options.userComments, 
+    options.artist, 
+    options.software,
+    options.latitude,
+    options.longitude
   )
 
   // Parse resulting photo (EXIF data)
@@ -43,3 +48,4 @@ suspend fun CameraSession.takePhoto(options: TakePhotoOptions): Photo {
 
 private val AudioManager.isSilent: Boolean
   get() = ringerMode != AudioManager.RINGER_MODE_NORMAL
+
