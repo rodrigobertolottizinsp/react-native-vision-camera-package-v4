@@ -69,6 +69,7 @@ RCT_REMAP_VIEW_PROPERTY(onAverageFpsChanged, onAverageFpsChangedEvent, RCTDirect
 // Code Scanner
 RCT_EXPORT_VIEW_PROPERTY(codeScannerOptions, NSDictionary);
 RCT_EXPORT_VIEW_PROPERTY(onZoomChanged, RCTDirectEventBlock);
+RCT_EXPORT_VIEW_PROPERTY(onPositionChanged, RCTDirectEventBlock);
 RCT_REMAP_VIEW_PROPERTY(onCodeScanned, onCodeScannedEvent, RCTDirectEventBlock);
 
 // Camera View Functions

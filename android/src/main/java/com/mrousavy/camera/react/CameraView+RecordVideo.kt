@@ -40,6 +40,16 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
     map.putDouble("duration", video.durationMs.toDouble() / 1000.0)
     map.putInt("width", video.size.width)
     map.putInt("height", video.size.height)
+    // Convert MutableList<FloatArray> to WritableArray
+    val histogramArray = Arguments.createArray()
+    video.accelerometer_histogram.forEach { floatArray ->
+      val innerArray = Arguments.createArray()
+      floatArray.forEach { value ->
+        innerArray.pushDouble(value.toDouble()) // Convert Float to Double for React Native compatibility
+      }
+      histogramArray.pushArray(innerArray)
+    }
+    map.putArray("accelerometer_histogram", histogramArray) // Add the array to the map
     onRecordCallback(map, null)
   }
   val onError = { error: CameraError ->

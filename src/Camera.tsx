@@ -45,6 +45,15 @@ function isSkiaFrameProcessor(frameProcessor?: ReadonlyFrameProcessor | Drawable
   return frameProcessor?.type === 'drawable-skia'
 }
 
+interface Position {
+  xAccel: number;
+  yAccel: number;
+  zAccel: number;
+  xGyro: number;
+  yGyro: number;
+  zGyro: number;
+}
+
 //#region Camera Component
 /**
  * ### A powerful `<Camera>` component.
@@ -90,6 +99,7 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
 
   private readonly ref: React.RefObject<RefType>
 
+  
   /** @internal */
   constructor(props: CameraProps) {
     super(props)
@@ -106,6 +116,8 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
     this.onError = this.onError.bind(this)
     this.onCodeScanned = this.onCodeScanned.bind(this)
     this.onZoomChanged = this.onZoomChanged.bind(this)
+    this.onPositionChanged = this.onPositionChanged.bind(this)
+
     this.ref = React.createRef<RefType>()
     this.lastFrameProcessor = undefined
     this.state = {
@@ -581,6 +593,10 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
     this.props.onZoomChanged?.(event.nativeEvent.zoomFactor)
   }
 
+  private onPositionChanged(event: NativeSyntheticEvent<{ position: Position }>): void {
+    this.props.onPositionChanged?.(event.nativeEvent.position)
+  }
+
   //#region Lifecycle
   private setFrameProcessor(frameProcessor: (frame: Frame) => void): void {
     VisionCameraProxy.setFrameProcessor(this.handle, frameProcessor)
@@ -664,6 +680,7 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
         onInitialized={this.onInitialized}
         onCodeScanned={this.onCodeScanned}
         onZoomChanged={this.onZoomChanged}
+        onPositionChanged={this.onPositionChanged}
         onStarted={this.onStarted}
         onStopped={this.onStopped}
         onPreviewStarted={this.onPreviewStarted}

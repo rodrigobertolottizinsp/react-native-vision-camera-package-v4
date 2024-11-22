@@ -234,6 +234,10 @@ class CameraView(context: Context) :
     }
   }
 
+  fun getZoomLevel(): Float {
+    return zoom // This retrieves the zoom level directly from the CameraView
+  }
+
   @SuppressLint("ClickableViewAccessibility")
   private fun updateZoomGesture() {
     if (enableZoomGesture) {

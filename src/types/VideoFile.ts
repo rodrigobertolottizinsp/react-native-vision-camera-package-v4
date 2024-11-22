@@ -50,6 +50,7 @@ export interface RecordVideoOptions {
    * @default 'normal'
    */
   videoBitRate?: 'extra-low' | 'low' | 'normal' | 'high' | 'extra-high' | number
+  zAssistMotionEnabled?: boolean
 }
 
 /**

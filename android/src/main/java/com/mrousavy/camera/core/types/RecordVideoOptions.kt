@@ -9,7 +9,8 @@ class RecordVideoOptions(
   val file: OutputFile,
   val videoCodec: VideoCodec,
   val videoBitRateOverride: Double?,
-  val videoBitRateMultiplier: Double?
+  val videoBitRateMultiplier: Double?,
+  val zAssistMotionEnabled: Boolean
 ) {
 
   companion object {
@@ -19,9 +20,10 @@ class RecordVideoOptions(
       val videoCodec = if (map.hasKey("videoCodec")) VideoCodec.fromUnionValue(map.getString("videoCodec")) else VideoCodec.H264
       val videoBitRateOverride = if (map.hasKey("videoBitRateOverride")) map.getDouble("videoBitRateOverride") else null
       val videoBitRateMultiplier = if (map.hasKey("videoBitRateMultiplier")) map.getDouble("videoBitRateMultiplier") else null
+      val zAssistMotionEnabled = if (map.hasKey("zAssistMotionEnabled")) map.getBoolean("zAssistMotionEnabled") else false
 
       val outputFile = OutputFile(context, directory, fileType.toExtension())
-      return RecordVideoOptions(outputFile, videoCodec, videoBitRateOverride, videoBitRateMultiplier)
+      return RecordVideoOptions(outputFile, videoCodec, videoBitRateOverride, videoBitRateMultiplier, zAssistMotionEnabled)
     }
   }
 }

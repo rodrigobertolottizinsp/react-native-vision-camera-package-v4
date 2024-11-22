@@ -7,6 +7,7 @@
 //
 
 import AVFoundation
+import CoreMotion
 
 // MARK: - CameraView + AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate
 
@@ -14,10 +15,12 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAud
   func startRecording(options: NSDictionary, callback jsCallback: @escaping RCTResponseSenderBlock) {
     // Type-safety
     let callback = Callback(jsCallback)
-
+      
     do {
       let options = try RecordVideoOptions(fromJSValue: options)
-
+        if (options.zAssistMotionEnabled){
+            startAccelerometerUpdates()
+        }
       // Start Recording with success and error callbacks
       cameraSession.startRecording(
         options: options,
@@ -37,9 +40,11 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAud
       }
     }
   }
-
+    
   func stopRecording(promise: Promise) {
+    stopAccelerometerUpdates()
     cameraSession.stopRecording(promise: promise)
+      
   }
 
   func cancelRecording(promise: Promise) {

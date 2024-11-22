@@ -23,6 +23,7 @@ struct RecordVideoOptions {
    * or set via bitRate, in Megabits per second (Mbps)
    */
   var bitRateMultiplier: Double?
+  var zAssistMotionEnabled: Bool = false
 
   init(fromJSValue dictionary: NSDictionary) throws {
     // File Type (.mov or .mp4)
@@ -44,6 +45,9 @@ struct RecordVideoOptions {
     // BitRate Multiplier
     if let parsed = dictionary["videoBitRateMultiplier"] as? Double {
       bitRateMultiplier = parsed
+    }
+    if let parsed = dictionary["zAssistMotionEnabled"] as? Bool {
+       zAssistMotionEnabled = parsed
     }
     // Custom Path
     let fileExtension = fileType.descriptor ?? "mov"

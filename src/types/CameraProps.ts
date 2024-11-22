@@ -318,6 +318,7 @@ export interface CameraProps extends ViewProps {
    */
   onInitialized?: () => void
   onZoomChanged: (number) => void
+  onPositionChanged: (object) => void
   /**
    * Called when the camera started the session. (`isActive={true}`)
    *

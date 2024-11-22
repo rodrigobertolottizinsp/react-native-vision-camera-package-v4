@@ -49,6 +49,7 @@ export interface RecordVideoOptions {
      * @default 'normal'
      */
     videoBitRate?: 'extra-low' | 'low' | 'normal' | 'high' | 'extra-high' | number;
+    zAssistMotionEnabled: boolean;
 }
 /**
  * Represents a Video taken by the Camera written to the local filesystem.

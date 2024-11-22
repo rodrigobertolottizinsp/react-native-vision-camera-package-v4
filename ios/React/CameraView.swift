@@ -9,6 +9,7 @@
 import AVFoundation
 import Foundation
 import UIKit
+import CoreMotion
 
 // TODOs for the CameraView which are currently too hard to implement either because of AVFoundation's limitations, or my brain capacity
 //
@@ -80,6 +81,7 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
   @objc var onAverageFpsChangedEvent: RCTDirectEventBlock?
   @objc var onCodeScannedEvent: RCTDirectEventBlock?
   @objc var onZoomChanged: RCTDirectEventBlock?
+  @objc var onPositionChanged: RCTDirectEventBlock?
 
   // zoom
   @objc var enableZoomGesture = false {
@@ -109,9 +111,15 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
 
   // CameraView+TakeSnapshot
   var latestVideoFrame: Snapshot?
-
+    
+  private var elapsedTime: Double = 0.0 // Initialize a counter
+  var motionManager = CMMotionManager()  // CoreMotion Manager for accelerometer
+  var updateInterval = 0.0333
   // pragma MARK: Setup
+  var accelerometerDataList: [[String: Any]] = []
+   var timer: DispatchSourceTimer?
 
+    
   override public init(frame: CGRect) {
     super.init(frame: frame)
     cameraSession.delegate = self
@@ -119,11 +127,85 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
     updatePreview()
   }
 
+
+    
+    
   @available(*, unavailable)
   required init?(coder _: NSCoder) {
     fatalError("init(coder:) is not implemented.")
   }
 
+    func startAccelerometerUpdates() {
+        guard let onPositionChanged = self.onPositionChanged else {
+            print("onPositionChanged is nil. Accelerometer updates will not start.")
+            return
+        }
+            // Clear previous data
+            elapsedTime = 0.0
+
+            // Check if accelerometer and gyroscope are available
+            guard motionManager.isAccelerometerAvailable, motionManager.isGyroAvailable else {
+                print("Required sensors are not available on this device.")
+                return
+            }
+
+            // Set up the data interval for internal updates
+            motionManager.accelerometerUpdateInterval = updateInterval
+            motionManager.gyroUpdateInterval = updateInterval
+
+            // Start updates for both sensors
+            motionManager.startAccelerometerUpdates()
+            motionManager.startGyroUpdates()
+
+            // Set up a timer to sample data at exact intervals
+            timer = DispatchSource.makeTimerSource(queue: .main)
+            timer?.schedule(deadline: .now(), repeating: updateInterval)
+
+            timer?.setEventHandler { [weak self] in
+                guard let self = self else { return }
+                guard let accelerometerData = self.motionManager.accelerometerData,
+                      let gyroscopeData = self.motionManager.gyroData else { return }
+
+                // Capture accelerometer data
+                let xAccel = accelerometerData.acceleration.x
+                let yAccel = accelerometerData.acceleration.y
+                let zAccel = accelerometerData.acceleration.z
+
+                // Capture gyroscope data
+                let xGyro = gyroscopeData.rotationRate.x
+                let yGyro = gyroscopeData.rotationRate.y
+                let zGyro = gyroscopeData.rotationRate.z
+
+                // Create a combined data point
+//                let dataPoint: [String: Any] = [
+//                    "time": self.elapsedTime,
+//                    "accelerometer": ["x": xAccel, "y": yAccel, "z": zAccel],
+//                    "gyroscope": ["x": xGyro, "y": yGyro, "z": zGyro]
+//                ]
+//                self.sensorDataList.append(dataPoint)
+
+                // Optionally, emit or process the data
+                self.onPositionChanged?([
+                     "position": ["xAccel": xAccel, "yAccel": yAccel, "zAccel": zAccel,"xGyro": xGyro, "yGyro": yGyro, "zGyro": zGyro, "time": self.elapsedTime]
+                 ])
+
+                // Increment elapsed time
+                self.elapsedTime += self.updateInterval
+            }
+
+            // Start the timer
+            timer?.resume()
+        }
+
+
+    
+    func stopAccelerometerUpdates() {
+        print(self.accelerometerDataList)
+        timer?.cancel()
+        timer = nil
+      motionManager.stopAccelerometerUpdates()
+    }
+    
   override public func willMove(toSuperview newSuperview: UIView?) {
     super.willMove(toSuperview: newSuperview)
 
