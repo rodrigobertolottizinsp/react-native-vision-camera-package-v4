@@ -2,6 +2,7 @@ package com.mrousavy.camera.react
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import android.view.Gravity
 import android.view.ScaleGestureDetector
@@ -247,6 +248,11 @@ class CameraView(context: Context) :
           override fun onScale(detector: ScaleGestureDetector): Boolean {
             zoom *= detector.scaleFactor
             update()
+            // Send zoom update via Intent
+            val intent = Intent("com.mrousavy.camera.ZOOM_UPDATED").apply {
+              putExtra("zoomLevel", zoom)
+            }
+            context.sendBroadcast(intent)
             onZoomChanged(zoom.toDouble())
             return true
           }

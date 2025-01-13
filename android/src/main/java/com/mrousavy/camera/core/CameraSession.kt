@@ -1,7 +1,10 @@
 package com.mrousavy.camera.core
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.util.Log
@@ -27,6 +30,7 @@ import com.mrousavy.camera.core.types.Orientation
 import com.mrousavy.camera.core.types.ShutterType
 import com.mrousavy.camera.core.utils.runOnUiThread
 import com.mrousavy.camera.frameprocessors.Frame
+import com.mrousavy.camera.react.CameraView
 import java.io.Closeable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -64,6 +68,7 @@ class CameraSession(internal val context: Context, internal val callback: Callba
   internal var recording: Recording? = null
   internal var isRecordingCanceled = false
   internal val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+   internal var currentZoomLevel: Float = 1f
 
   // Threading
   internal val mainExecutor = ContextCompat.getMainExecutor(context)
