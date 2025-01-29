@@ -41,6 +41,13 @@ class OrientationManager(private val context: Context, private val callback: Cal
     }
   }
 
+  public fun close() {
+    // Unregister listeners when the camera is exited
+    displayManager.unregisterDisplayListener(displayListener);
+    orientationListener.disable();
+    Log.i("SensorManager", "Cleaned orentationListener")
+  }
+
   // Get the current preview orientation (computed by the screen's orientation)
   val previewOrientation: Orientation
     get() = Orientation.fromSurfaceRotation(screenRotation)

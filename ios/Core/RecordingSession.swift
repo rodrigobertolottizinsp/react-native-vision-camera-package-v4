@@ -26,6 +26,10 @@ final class RecordingSession {
   private var audioTrack: Track?
   private let completionHandler: (RecordingSession, AVAssetWriter.Status, Error?) -> Void
   private var isFinishing = false
+    private let maxDuration: TimeInterval = 3 * 60 // 3 minutes
+  private var recordingTimer: DispatchSourceTimer?
+
+
 
   private let lock = DispatchSemaphore(value: 1)
 
@@ -167,6 +171,16 @@ final class RecordingSession {
     // Start both tracks
     videoTrack?.start()
     audioTrack?.start()
+      
+      // Schedule a timer to stop the recording after maxDuration
+      recordingTimer = DispatchSource.makeTimerSource()
+      recordingTimer?.schedule(deadline: .now() + maxDuration)
+      recordingTimer?.setEventHandler { [weak self] in
+        guard let self = self else { return }
+        VisionLogger.log(level: .info, message: "Max recording duration reached. Stopping session.")
+        self.stop()
+      }
+      recordingTimer?.resume()
   }
 
   /**
@@ -177,6 +191,8 @@ final class RecordingSession {
    Once all late frames have been captured (or an artificial abort timeout has been triggered), the [completionHandler] will be called.
    */
   func stop() {
+    recordingTimer?.cancel() // Cancel the timer
+    recordingTimer = nil
     lock.wait()
     defer {
       lock.signal()
@@ -277,6 +293,8 @@ final class RecordingSession {
    Stops the AssetWriters and calls the completion callback.
    */
   private func finish() {
+    recordingTimer?.cancel() // Cancel the timer
+recordingTimer = nil
     lock.wait()
     defer {
       lock.signal()
