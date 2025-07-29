@@ -35,6 +35,9 @@ export type NativeCameraViewProps = Omit<
   | 'codeScanner'
   | 'fps'
   | 'onZoomChanged'
+  | 'onMicInputChanged'
+  | 'onMotionChanged'
+  | 'onSteadyMovementChanged'
   | 'onPositionChanged'
 > & {
   // private intermediate props

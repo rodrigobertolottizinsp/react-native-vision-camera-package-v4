@@ -16,10 +16,11 @@ extension CameraSession {
   /**
    Starts a video + audio recording with a custom Asset Writer.
    */
+    //onMicInputChanged: @escaping (_ loudness: Bool) -> Void
   func startRecording(options: RecordVideoOptions,
                       onVideoRecorded: @escaping (_ video: Video) -> Void,
-                      onError: @escaping (_ error: CameraError) -> Void) {
-    // Run on Camera Queue
+                      onError: @escaping (_ error: CameraError) -> Void, onMicInputChanged: ((_ loudness: String, _ chunkCount: Int, _ totalChunks: Int) -> Void)? = nil) {
+    // Run on Camera Queu
     CameraQueues.cameraQueue.async {
       let start = DispatchTime.now()
       VisionLogger.log(level: .info, message: "Starting Video recording...")
@@ -35,7 +36,6 @@ extension CameraSession {
       }
 
       let enableAudio = self.configuration?.audio != .disabled
-
       // Callback for when the recording ends
       let onFinish = { (recordingSession: RecordingSession, status: AVAssetWriter.Status, error: Error?) in
         defer {
@@ -99,7 +99,6 @@ extension CameraSession {
                                                     orientation: orientation,
                                                     completion: onFinish)
 
-
           
         // Init Audio + Activate Audio Session (optional)
         if enableAudio,
@@ -130,6 +129,17 @@ extension CameraSession {
         self.didCancelRecording = false
         self.recordingSession = recordingSession
 
+        let recordMicrophone = self.configuration?.enableMicInputChanges ?? false
+
+        if recordMicrophone, let onMicInputChanged = onMicInputChanged {
+          recordingSession.onLoudnessDetected = { [weak self] db, chunkCount, totalChunks in
+            onMicInputChanged(String(db), chunkCount, totalChunks)
+          }
+        } else {
+          recordingSession.onLoudnessDetected = nil
+        }
+          
+          
         let end = DispatchTime.now()
         VisionLogger.log(level: .info, message: "RecordingSesssion started in \(Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000)ms!")
       } catch let error as CameraError {

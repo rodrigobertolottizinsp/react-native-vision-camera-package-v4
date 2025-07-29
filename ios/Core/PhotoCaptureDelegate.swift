@@ -107,7 +107,7 @@ class PhotoCaptureDelegate: GlobalReferenceHolder, AVCapturePhotoCaptureDelegate
       return
     }
   }
-
+    
   private func getOrientation(forExifOrientation exifOrientation: CGImagePropertyOrientation) -> String {
     switch exifOrientation {
     case .up, .upMirrored:

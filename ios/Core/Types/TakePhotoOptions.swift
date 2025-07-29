@@ -13,7 +13,7 @@ struct TakePhotoOptions {
   var path: URL
   var enableAutoRedEyeReduction = false
   var enableAutoDistortionCorrection = false
-  var enableShutterSound = true
+  var enableShutterSound = false
   var artist = ""
   var userComment = ""
   var software = ""

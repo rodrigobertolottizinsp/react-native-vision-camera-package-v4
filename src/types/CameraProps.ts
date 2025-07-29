@@ -303,7 +303,7 @@ export interface CameraProps extends ViewProps {
    * @default false (back camera), true (front camera)
    */
   isMirrored?: boolean
-
+  enableMicInputChanges?: boolean
   //#region Events
   /**
    * Called when any kind of runtime error occured.
@@ -318,6 +318,18 @@ export interface CameraProps extends ViewProps {
    */
   onInitialized?: () => void
   onZoomChanged: (number) => void
+  onZoomStateChanged: (zooming) => void
+  
+  /**
+    (audio path, chunk number, total chunks)
+    total chunks only will come defined with the last audio chunk
+   */
+  onMicInputChanged: (string, number, number) => void
+
+  onMotionChanged: (string) => void
+
+  onSteadyMovementChanged: (number) => void
+  
   onPositionChanged: (object) => void
   /**
    * Called when the camera started the session. (`isActive={true}`)

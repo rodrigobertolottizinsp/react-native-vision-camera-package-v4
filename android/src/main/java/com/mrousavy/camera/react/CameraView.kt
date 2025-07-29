@@ -97,6 +97,12 @@ class CameraView(context: Context) :
       field = value
       updateZoomGesture()
     }
+
+  var enableMicInputChanges = false
+    set(value) {
+      field = value
+    }
+
   var resizeMode: ResizeMode = ResizeMode.COVER
     set(value) {
       field = value
@@ -117,6 +123,10 @@ class CameraView(context: Context) :
   private var currentConfigureCall: Long = System.currentTimeMillis()
   private val fpsSampleCollector = FpsSampleCollector(this)
 
+  // to handle zoom status changes
+  private var isZooming = false
+  private var zoomEndRunnable: Runnable? = null
+  private val zoomHandler = android.os.Handler()
   init {
     clipToOutline = true
     cameraSession = CameraSession(context, this)
@@ -239,6 +249,16 @@ class CameraView(context: Context) :
     return zoom // This retrieves the zoom level directly from the CameraView
   }
 
+  private fun notifyZoomingChanged(zooming: Boolean) {
+    if (zooming && !isZooming) {
+      isZooming = true
+      invokeOnZoomStateChanged(true)
+    } else if (!zooming && isZooming) {
+      isZooming = false
+      invokeOnZoomStateChanged(false)
+    }
+  }
+
   @SuppressLint("ClickableViewAccessibility")
   private fun updateZoomGesture() {
     if (enableZoomGesture) {
@@ -254,6 +274,20 @@ class CameraView(context: Context) :
             }
             context.sendBroadcast(intent)
             onZoomChanged(zoom.toDouble())
+            if (enableMicInputChanges) {
+
+              //handle zoom state changes
+              // 🚀 Notify zooming start
+              notifyZoomingChanged(true)
+
+              // 🕒 Restart zoom-end delay
+              zoomEndRunnable?.let { zoomHandler.removeCallbacks(it) }
+              zoomEndRunnable = Runnable {
+                notifyZoomingChanged(false)
+              }
+              zoomHandler.postDelayed(zoomEndRunnable!!, 1000)
+            }
+            //finish handle zoom state changes
             return true
           }
         }
@@ -360,4 +394,16 @@ class CameraView(context: Context) :
   override fun onZoomChanged(zoom: Double){
     invokeOnZoomChanged(zoom)
   }
+
+   override fun onMicInputChanged(db: String, chunkCount: Int, totalChunks: Int){
+     invokeOnMicInputChanged(db, chunkCount, totalChunks)
+   }
+
+    override fun onMotionChanged(motion: String){
+     invokeOnMotionChanged(motion)
+   }
+
+  override fun onSteadyMovementChanged(timestamp: Number){
+     invokeOnSteadyMovementChanged(timestamp)
+   }
 }

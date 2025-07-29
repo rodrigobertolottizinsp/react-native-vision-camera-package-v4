@@ -51,6 +51,7 @@ export interface RecordVideoOptions {
    */
   videoBitRate?: 'extra-low' | 'low' | 'normal' | 'high' | 'extra-high' | number
   zAssistMotionEnabled?: boolean
+  onAudioCallback: (db: number) => void
 }
 
 /**

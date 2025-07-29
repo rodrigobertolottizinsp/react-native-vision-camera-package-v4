@@ -116,6 +116,10 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
     this.onError = this.onError.bind(this)
     this.onCodeScanned = this.onCodeScanned.bind(this)
     this.onZoomChanged = this.onZoomChanged.bind(this)
+    this.onZoomStateChanged = this.onZoomStateChanged.bind(this)
+    this.onMicInputChanged = this.onMicInputChanged.bind(this)
+    this.onMotionChanged = this.onMotionChanged.bind(this)
+    this.onSteadyMovementChanged = this.onSteadyMovementChanged.bind(this)
     this.onPositionChanged = this.onPositionChanged.bind(this)
 
     this.ref = React.createRef<RefType>()
@@ -593,6 +597,27 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
     this.props.onZoomChanged?.(event.nativeEvent.zoomFactor)
   }
 
+  private onZoomStateChanged(event: NativeSyntheticEvent<boolean>): void {
+    this.props.onZoomStateChanged?.(event.nativeEvent.zooming)
+  }
+
+  // private onMicInputChanged(event: NativeSyntheticEvent<string>): void {
+  //   this.props.onMicInputChanged?.(event.nativeEvent?.db)
+  // }
+
+  // private onMicInputChanged(event: NativeSyntheticEvent<{ db: string, chunkCount: number, totalChunks: number }>): void {
+  private onMicInputChanged(event: NativeSyntheticEvent<{ db: string }>): void {
+    this.props.onMicInputChanged?.(event.nativeEvent.db, event.nativeEvent.chunkCount, event.nativeEvent.totalChunks)
+  }
+
+  private onMotionChanged(event: NativeSyntheticEvent<string>): void {
+    this.props.onMotionChanged?.(event.nativeEvent?.motion)
+  }
+
+  private onSteadyMovementChanged(event: NativeSyntheticEvent<number>): void {
+    this.props.onSteadyMovementChanged?.(event.nativeEvent?.timestamp)
+  }
+  
   private onPositionChanged(event: NativeSyntheticEvent<{ position: Position }>): void {
     this.props.onPositionChanged?.(event.nativeEvent.position)
   }
@@ -675,12 +700,17 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
         minFps={minFps}
         maxFps={maxFps}
         isMirrored={props.isMirrored ?? shouldBeMirrored}
+        enableMicInputChanges={props.enableMicInputChanges ?? false}
         onViewReady={this.onViewReady}
         onAverageFpsChanged={enableFpsGraph ? this.onAverageFpsChanged : undefined}
         onInitialized={this.onInitialized}
         onCodeScanned={this.onCodeScanned}
         onZoomChanged={this.onZoomChanged}
+        onZoomStateChanged={this.onZoomStateChanged}
+        onMicInputChanged={this.onMicInputChanged}
         onPositionChanged={this.onPositionChanged}
+        onMotionChanged={this.onMotionChanged}
+        onSteadyMovementChanged={this.onSteadyMovementChanged}
         onStarted={this.onStarted}
         onStopped={this.onStopped}
         onPreviewStarted={this.onPreviewStarted}

@@ -87,7 +87,6 @@ class CameraSession(internal val context: Context, internal val callback: Callba
   }
 
   override fun close() {
-    Log.i(TAG, "Closing CameraSession...")
     orientationManager.close()
     isDestroyed = true
     runOnUiThread {
@@ -220,5 +219,8 @@ class CameraSession(internal val context: Context, internal val callback: Callba
     fun onPreviewOrientationChanged(previewOrientation: Orientation)
     fun onCodeScanned(codes: List<Barcode>, scannerFrame: CodeScannerFrame)
     fun onZoomChanged(zoom: Double)
+    fun onMicInputChanged(zoom: String, chunkCount: Int, totalChunks: Int)
+    fun onMotionChanged(motion: String)
+    fun onSteadyMovementChanged(timestamp: Number)
   }
 }

@@ -29,6 +29,17 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAud
         },
         onError: { error in
           callback.reject(error: error)
+        },
+        onMicInputChanged: { [self] loudness, chunkCount, totalChunks in
+            print("Sending onAudioLoudness event with db: \(loudness)")
+           DispatchQueue.main.async {
+               print("Dispatching onAudioLoudness on main thread")
+               self.onMicInputChanged?([
+                   "db": loudness,
+                   "chunkCount": chunkCount,
+                   "totalChunks": totalChunks
+               ])
+           }
         }
       )
     } catch {

@@ -42,6 +42,10 @@ class CameraViewManager : ViewGroupManager<CameraView>() {
       .put("cameraError", MapBuilder.of("registrationName", "onError"))
       .put("cameraCodeScanned", MapBuilder.of("registrationName", "onCodeScanned"))
       .put("zoomChanged",MapBuilder.of("registrationName", "onZoomChanged"))
+      .put("zoomStateChanged",MapBuilder.of("registrationName", "onZoomStateChanged"))
+      .put("micInputChanged",MapBuilder.of("registrationName", "onMicInputChanged"))
+      .put("motionChanged",MapBuilder.of("registrationName", "onMotionChanged"))
+      .put("steadyMovementChanged",MapBuilder.of("registrationName", "onSteadyMovementChanged"))
       .build()
 
   override fun getName(): String = TAG
@@ -109,6 +113,11 @@ class CameraViewManager : ViewGroupManager<CameraView>() {
   @ReactProp(name = "enableZoomGesture")
   fun setEnableZoomGesture(view: CameraView, enableZoomGesture: Boolean) {
     view.enableZoomGesture = enableZoomGesture
+  }
+
+  @ReactProp(name = "enableMicInputChanges")
+  fun setEnableMicInputChanges(view: CameraView, enableMicInputChanges: Boolean) {
+    view.enableMicInputChanges = enableMicInputChanges
   }
 
   @ReactProp(name = "videoStabilizationMode")

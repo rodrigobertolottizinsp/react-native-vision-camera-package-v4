@@ -30,7 +30,7 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
   @objc var enablePortraitEffectsMatteDelivery = false
   @objc var enableBufferCompression = false
   @objc var isMirrored = false
-
+  @objc var enableMicInputChanges = false
   // use cases
   @objc var photo = false
   @objc var video = false
@@ -81,6 +81,10 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
   @objc var onAverageFpsChangedEvent: RCTDirectEventBlock?
   @objc var onCodeScannedEvent: RCTDirectEventBlock?
   @objc var onZoomChanged: RCTDirectEventBlock?
+  @objc var onZoomStateChanged: RCTDirectEventBlock?
+  @objc var onMicInputChanged: RCTDirectEventBlock?
+  @objc var onMotionChanged: RCTDirectEventBlock?  
+  @objc var onSteadyMovementChanged: RCTDirectEventBlock?  
   @objc var onPositionChanged: RCTDirectEventBlock?
 
   // zoom
@@ -119,6 +123,24 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
   var accelerometerDataList: [[String: Any]] = []
    var timer: DispatchSourceTimer?
 
+    private var imuWindow: [(xa: Double, ya: Double, za: Double, xg: Double, yg: Double, zg: Double)] = []
+    private let windowSize = 5
+    private var lastMotionClassification: String? = nil
+    private var steadyAccumulator: Double = 0.0
+    private let steadyTrigger: Double = 2.0
+    private var movingTime: Double? = nil
+    private var unsteadyTime: Double? = nil
+    private var panningTime: Double? = nil
+
+    //TODO: Initialize vector (x, y , z)
+    private var accRotation: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
+    
+    //
+    private let accRotationThreshold = 20.0 * .pi / 180  // adjust this value based on your needs
+    private var lastRunInterval = 0.0
+    
+    let zoomState = ZoomState()
+    let gyroErrorMargin = 0.01
     
   override public init(frame: CGRect) {
     super.init(frame: frame)
@@ -136,71 +158,197 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
   }
 
     func startAccelerometerUpdates() {
-        guard let onPositionChanged = self.onPositionChanged else {
-            print("onPositionChanged is nil. Accelerometer updates will not start.")
-            return
-        }
-            // Clear previous data
-            elapsedTime = 0.0
+      guard let onPositionChanged = self.onPositionChanged else {
+        print("onPositionChanged is nil. Accelerometer updates will not start.")
+        return
+      }
+      elapsedTime = 0.0
 
-            // Check if accelerometer and gyroscope are available
-            guard motionManager.isAccelerometerAvailable, motionManager.isGyroAvailable else {
-                print("Required sensors are not available on this device.")
-                return
+      guard motionManager.isAccelerometerAvailable, motionManager.isGyroAvailable else {
+        print("Required sensors are not available on this device.")
+        return
+      }
+
+      motionManager.accelerometerUpdateInterval = updateInterval
+      motionManager.gyroUpdateInterval = updateInterval
+
+      motionManager.startAccelerometerUpdates()
+      motionManager.startGyroUpdates()
+
+      timer = DispatchSource.makeTimerSource(queue: .main)
+      timer?.schedule(deadline: .now(), repeating: updateInterval)
+
+      timer?.setEventHandler { [weak self] in
+        guard let self = self else { return }
+        guard let accelerometerData = self.motionManager.accelerometerData,
+              let gyroscopeData = self.motionManager.gyroData else { return }
+
+          let xa = accelerometerData.acceleration.x
+          let ya = accelerometerData.acceleration.y
+          let za = accelerometerData.acceleration.z
+
+          let xg = gyroscopeData.rotationRate.x
+          let yg = gyroscopeData.rotationRate.y
+          let zg = gyroscopeData.rotationRate.z
+
+        if let _ = self.onMotionChanged {
+            let currentRunTimestamp = gyroscopeData.timestamp
+            let realUpdateInterval = currentRunTimestamp - self.lastRunInterval
+            self.lastRunInterval = currentRunTimestamp
+            
+            let logZoom = log(Double(zoom)) + 1
+            
+            var xgAccRot = abs(xg) < gyroErrorMargin ? 0 : xg
+            var ygAccRot = abs(yg) < gyroErrorMargin ? 0 : yg
+            var zgAccRot = abs(zg) < gyroErrorMargin ? 0 : zg
+
+            let accRotX = self.accRotation.x
+            let accRotY = self.accRotation.y
+            let accRotZ = self.accRotation.z
+            
+            self.accRotation.x = accRotX + (xgAccRot * realUpdateInterval * logZoom)
+            self.accRotation.y = accRotY + (ygAccRot * realUpdateInterval * logZoom)
+            self.accRotation.z = accRotZ + (zgAccRot * realUpdateInterval * logZoom)
+            
+            if self.imuWindow.count >= self.windowSize {
+              self.imuWindow.removeFirst()
             }
+            self.imuWindow.append((xa, ya, za, xg, yg, zg))
 
-            // Set up the data interval for internal updates
-            motionManager.accelerometerUpdateInterval = updateInterval
-            motionManager.gyroUpdateInterval = updateInterval
+            if self.imuWindow.count == self.windowSize {
+              let avg = self.imuWindow.reduce((0.0, 0.0, 0.0, 0.0, 0.0, 0.0)) { acc, val in
+                (
+                  acc.0 + val.xa,
+                  acc.1 + val.ya,
+                  acc.2 + val.za,
+                  acc.3 + val.xg,
+                  acc.4 + val.yg,
+                  acc.5 + val.zg
+                )
+              }
 
-            // Start updates for both sensors
-            motionManager.startAccelerometerUpdates()
-            motionManager.startGyroUpdates()
+              let divisor = Double(self.windowSize)
+              let (avgAx, avgAy, avgAz, avgGx, avgGy, avgGz) = (
+                avg.0 / divisor,
+                avg.1 / divisor,
+                avg.2 / divisor,
+                avg.3 / divisor,
+                avg.4 / divisor,
+                avg.5 / divisor
+              )
 
-            // Set up a timer to sample data at exact intervals
-            timer = DispatchSource.makeTimerSource(queue: .main)
-            timer?.schedule(deadline: .now(), repeating: updateInterval)
+              let netAcc = sqrt(avgAx * avgAx + avgAy * avgAy + avgAz * avgAz)
+                
+              let gx2 = avgGx * avgGx
+              let gy2 = avgGy * avgGy
+              let gz2 = avgGz * avgGz
+              let agularVelocityMagnitude = sqrt(gx2 + gy2 + gz2)
+                
+              let tangencialVelocityMagnitude = agularVelocityMagnitude * logZoom
+            
+              // todo:self.updateInterval shoudl be now - last updated
+              // Accumulate rotation vector (gyroscope) * time
+              // TODO: I need to add to the vector each of the coordinates with the new avgGx, avgGY, avgGz
+              // and multiply for the update interval
+              // accRotation += vector(avgGx, avgGy, avgGz) * updateInterval
+            
+              let accDev = abs(netAcc - 1.0)
+                
+              var motion = "Steady"
+                
+              if tangencialVelocityMagnitude <= 0.25 {
+                motion = "Steady"
+              } else if tangencialVelocityMagnitude <= 1.0 {
+                motion = "Panning"
+                self.panningTime = Date().timeIntervalSince1970
+              } else {
+                motion = "Unsteady"
+                self.unsteadyTime = Date().timeIntervalSince1970
+              }
 
-            timer?.setEventHandler { [weak self] in
-                guard let self = self else { return }
-                guard let accelerometerData = self.motionManager.accelerometerData,
-                      let gyroscopeData = self.motionManager.gyroData else { return }
+              
+                
+              if motion == "Steady" && accDev > 0.03 {
+                  if accDev < 0.1 {
+                      motion = "Moving"
+                      self.movingTime = Date().timeIntervalSince1970
+                  } else {
+                      motion = "Unsteady"
+                      self.unsteadyTime = Date().timeIntervalSince1970
+                  }
+              }
+                
+                var inertia = false;
+                
+                if (self.movingTime != nil){
+                    let inertiaTime = Date().timeIntervalSince1970 - self.movingTime!
+                    inertia = self.lastMotionClassification == "Moving" && inertiaTime < 1.0
+                }
+                
+                if (self.unsteadyTime != nil){
+                    let inertiaTime = Date().timeIntervalSince1970 - self.unsteadyTime!
+                    inertia = inertia || self.lastMotionClassification == "Unsteady" && inertiaTime < 1.0
+                }
+                
+                if (self.panningTime != nil){
+                    let inertiaTime = Date().timeIntervalSince1970 - self.panningTime!
+                    inertia = inertia || self.lastMotionClassification == "Panning" && inertiaTime < 1.0
+                }
+                
+                
+                if ((motion == "Steady" || motion == "Panning" || motion == "Moving") && inertia){
+                    motion = self.lastMotionClassification!
+                }
 
-                // Capture accelerometer data
-                let xAccel = accelerometerData.acceleration.x
-                let yAccel = accelerometerData.acceleration.y
-                let zAccel = accelerometerData.acceleration.z
-
-                // Capture gyroscope data
-                let xGyro = gyroscopeData.rotationRate.x
-                let yGyro = gyroscopeData.rotationRate.y
-                let zGyro = gyroscopeData.rotationRate.z
-
-                // Create a combined data point
-//                let dataPoint: [String: Any] = [
-//                    "time": self.elapsedTime,
-//                    "accelerometer": ["x": xAccel, "y": yAccel, "z": zAccel],
-//                    "gyroscope": ["x": xGyro, "y": yGyro, "z": zGyro]
-//                ]
-//                self.sensorDataList.append(dataPoint)
-
-                // Optionally, emit or process the data
-                self.onPositionChanged?([
-                     "position": ["xAccel": xAccel, "yAccel": yAccel, "zAccel": zAccel,"xGyro": xGyro, "yGyro": yGyro, "zGyro": zGyro, "time": self.elapsedTime]
-                 ])
-
-                // Increment elapsed time
-                self.elapsedTime += self.updateInterval
+                if motion != self.lastMotionClassification {
+                    // TODO: IF motion == steady clean vector
+                    // accRotation = (0, 0, 0)
+                    if motion == "Steady" {
+                        self.accRotation = (0.0, 0.0, 0.0)
+                    }
+                    self.lastMotionClassification = motion
+                    self.onMotionChanged?(["motion": motion])
+                }
+                
+                if motion == "Steady" {
+                    
+                    let accRotationMagnitude = sqrt(
+                        self.accRotation.x * self.accRotation.x +
+                        self.accRotation.y * self.accRotation.y +
+                        self.accRotation.z * self.accRotation.z
+                    )
+                    
+                    if accRotationMagnitude > self.accRotationThreshold {
+                        self.onSteadyMovementChanged?(["timestamp": Date().timeIntervalSince1970])
+                        self.accRotation = (0.0, 0.0, 0.0)
+                    }
+                }
+                
+                self.lastMotionClassification = motion
             }
+          }
+        
+        self.onPositionChanged?([
+          "position": [
+            "xAccel": xa,
+            "yAccel": ya,
+            "zAccel": za,
+            "xGyro": xg,
+            "yGyro": yg,
+            "zGyro": zg,
+            "time": self.elapsedTime,
+          ]
+        ])
+        self.elapsedTime += self.updateInterval
+      }
+      timer?.resume()
+  }
 
-            // Start the timer
-            timer?.resume()
-        }
+
 
 
     
     func stopAccelerometerUpdates() {
-        print(self.accelerometerDataList)
         timer?.cancel()
         timer = nil
       motionManager.stopAccelerometerUpdates()
@@ -277,7 +425,7 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
       // Input Camera Device
       config.cameraId = cameraId as? String
       config.isMirrored = isMirrored
-
+      config.enableMicInputChanges = enableMicInputChanges
       // Photo
       if photo {
         config.photo = .enabled(config: CameraConfiguration.Photo(qualityBalance: getPhotoQualityBalance(),
@@ -472,5 +620,13 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
     onAverageFpsChangedEvent?([
       "averageFps": averageFps,
     ])
+  }
+}
+
+final class ZoomState {
+  var value: CGFloat
+
+  init(initialZoom: CGFloat = 1.0) {
+    self.value = initialZoom
   }
 }

@@ -5,9 +5,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Callback
+import com.facebook.react.bridge.ReactContext
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.mrousavy.camera.core.CameraError
 import com.mrousavy.camera.core.MicrophonePermissionError
 import com.mrousavy.camera.core.MicrophoneUnavailableError
@@ -19,6 +22,7 @@ import com.mrousavy.camera.core.stopRecording
 import com.mrousavy.camera.core.types.RecordVideoOptions
 import com.mrousavy.camera.core.types.Video
 import com.mrousavy.camera.react.utils.makeErrorMap
+import java.util.concurrent.atomic.AtomicLong
 
 fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Callback) {
   // check audio permission
@@ -32,6 +36,27 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
   if (!isMicrophoneAvailable(context)) {
     throw MicrophoneUnavailableError()
     return
+  }
+
+  // Throttle loudness events to every 100ms
+  val lastLoudnessEvent = AtomicLong(0)
+  val loudnessEventInterval = 100 // 100ms in milliseconds
+
+  val loudnessCallback = loudnessCallback@{ loudness: Double ->
+    val now = System.currentTimeMillis()
+    if (now - lastLoudnessEvent.get() < loudnessEventInterval) {
+      return@loudnessCallback // Skip if too soon
+    }
+    lastLoudnessEvent.set(now)
+
+    // Emit event to JavaScript
+    val reactContext = context as ReactContext
+    val event = Arguments.createMap().apply {
+      putDouble("db", loudness)
+    }
+
+    reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            .emit("onAudioLoudness", event)
   }
 
   val callback = { video: Video ->
@@ -56,7 +81,22 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
     val errorMap = makeErrorMap(error.code, error.message)
     onRecordCallback(null, errorMap)
   }
-  cameraSession.startRecording(audio, options, callback, onError)
+
+  val onMicInput = { db: String, chunkCount: Int, totalChunks: Int  ->
+    Log.d("CameraView", "onMicInput called with db: $db")
+    onMicInputChanged(db, chunkCount, totalChunks)
+  }
+
+  val onMotion = { motion: String ->
+    Log.d("CameraView", "onMotion called with motion: $motion")
+    onMotionChanged(motion)
+  }
+
+  val onSteadyMovement = { timestamp: Number ->
+    onSteadyMovementChanged(timestamp)
+  }
+
+  cameraSession.startRecording(audio, options, callback, onError, enableMicInputChanges, onMicInput, onMotion, onSteadyMovement)
 }
 
 fun isMicrophoneAvailable(context: Context): Boolean {

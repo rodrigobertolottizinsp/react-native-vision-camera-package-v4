@@ -33,6 +33,7 @@ final class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
   var recordingSession: RecordingSession?
   var didCancelRecording = false
   var orientationManager = OrientationManager()
+  var onAudioLoudnessCallback: ((Float) -> Void)?
 
   // Callbacks
   weak var delegate: CameraSessionDelegate?
@@ -84,7 +85,7 @@ final class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
                                               name: AVAudioSession.interruptionNotification,
                                               object: AVAudioSession.sharedInstance)
   }
-
+  
   /**
    Creates a PreviewView for the current Capture Session
    */

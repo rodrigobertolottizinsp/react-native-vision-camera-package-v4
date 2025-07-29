@@ -26,6 +26,7 @@ export interface RecordVideoOptions {
      * Called when the recording has been successfully saved to file.
      */
     onRecordingFinished: (video: VideoFile) => void;
+    onAudioCallback: (db: number) => void;
     /**
      * The Video Codec to record in.
      * - `h264`: Widely supported, but might be less efficient, especially with larger sizes or framerates.

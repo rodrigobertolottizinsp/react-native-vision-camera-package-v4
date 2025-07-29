@@ -133,6 +133,36 @@ fun CameraView.invokeOnZoomChanged(zoom: Double) {
   reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "zoomChanged", event)
 }
 
+fun CameraView.invokeOnZoomStateChanged(zooming: Boolean) {
+  val event = Arguments.createMap()
+  event.putBoolean("zooming", zooming)
+  val reactContext = context as ReactContext
+  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "zoomStateChanged", event)
+}
+
+fun CameraView.invokeOnMicInputChanged(db: String, chunkCount: Int, totalChunks: Int) {
+  val event = Arguments.createMap()
+  event.putString("db", db)
+  event.putInt("chunkCount", chunkCount)
+  event.putInt("totalChunks", totalChunks)
+  val reactContext = context as ReactContext
+  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "micInputChanged", event)
+}
+
+fun CameraView.invokeOnMotionChanged(motion: String) {
+  val event = Arguments.createMap()
+  event.putString("motion", motion)
+  val reactContext = context as ReactContext
+  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "motionChanged", event)
+}
+
+fun CameraView.invokeOnSteadyMovementChanged(timestamp: Number) {
+  val event = Arguments.createMap()
+  event.putInt("timestamp", timestamp as Int)
+  val reactContext = context as ReactContext
+  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "steadyMovementChanged", event)
+}
+
 fun CameraView.invokeOnCodeScanned(barcodes: List<Barcode>, scannerFrame: CodeScannerFrame) {
   val codes = Arguments.createArray()
   barcodes.forEach { barcode ->
