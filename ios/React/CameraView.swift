@@ -10,6 +10,7 @@ import AVFoundation
 import Foundation
 import UIKit
 import CoreMotion
+import Speech
 
 // TODOs for the CameraView which are currently too hard to implement either because of AVFoundation's limitations, or my brain capacity
 //
@@ -30,7 +31,7 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
   @objc var enablePortraitEffectsMatteDelivery = false
   @objc var enableBufferCompression = false
   @objc var isMirrored = false
-  @objc var enableMicInputChanges = false
+  @objc var enableMotionAware = false
   // use cases
   @objc var photo = false
   @objc var video = false
@@ -83,7 +84,8 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
   @objc var onZoomChanged: RCTDirectEventBlock?
   @objc var onZoomStateChanged: RCTDirectEventBlock?
   @objc var onMicInputChanged: RCTDirectEventBlock?
-  @objc var onMotionChanged: RCTDirectEventBlock?  
+  @objc var onTranscribedTextChanged: RCTDirectEventBlock?
+  @objc var onMotionChanged: RCTDirectEventBlock?
   @objc var onSteadyMovementChanged: RCTDirectEventBlock?  
   @objc var onPositionChanged: RCTDirectEventBlock?
 
@@ -137,7 +139,11 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
     
     //
     private let accRotationThreshold = 20.0 * .pi / 180  // adjust this value based on your needs
+    private let steadySticknessThreshold = 20.0 * .pi / 180  // adjust this value based on your needs
+
     private var lastRunInterval = 0.0
+    
+    private var accRotationMagnitude = 0.0
     
     let zoomState = ZoomState()
     let gyroErrorMargin = 0.01
@@ -206,6 +212,8 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
             let accRotY = self.accRotation.y
             let accRotZ = self.accRotation.z
             
+            var forceMotionChange = false
+            
             self.accRotation.x = accRotX + (xgAccRot * realUpdateInterval * logZoom)
             self.accRotation.y = accRotY + (ygAccRot * realUpdateInterval * logZoom)
             self.accRotation.z = accRotZ + (zgAccRot * realUpdateInterval * logZoom)
@@ -246,18 +254,15 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
                 
               let tangencialVelocityMagnitude = agularVelocityMagnitude * logZoom
             
-              // todo:self.updateInterval shoudl be now - last updated
-              // Accumulate rotation vector (gyroscope) * time
-              // TODO: I need to add to the vector each of the coordinates with the new avgGx, avgGY, avgGz
-              // and multiply for the update interval
-              // accRotation += vector(avgGx, avgGy, avgGz) * updateInterval
-            
               let accDev = abs(netAcc - 1.0)
                 
               var motion = "Steady"
                 
               if tangencialVelocityMagnitude <= 0.25 {
                 motion = "Steady"
+              } else if (self.lastMotionClassification == "Steady" && self.accRotationMagnitude > steadySticknessThreshold){
+                motion = "Steady"
+                forceMotionChange = true
               } else if tangencialVelocityMagnitude <= 1.0 {
                 motion = "Panning"
                 self.panningTime = Date().timeIntervalSince1970
@@ -299,29 +304,30 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
                 if ((motion == "Steady" || motion == "Panning" || motion == "Moving") && inertia){
                     motion = self.lastMotionClassification!
                 }
-
-                if motion != self.lastMotionClassification {
-                    // TODO: IF motion == steady clean vector
-                    // accRotation = (0, 0, 0)
-                    if motion == "Steady" {
-                        self.accRotation = (0.0, 0.0, 0.0)
-                    }
-                    self.lastMotionClassification = motion
-                    self.onMotionChanged?(["motion": motion])
-                }
                 
                 if motion == "Steady" {
-                    
-                    let accRotationMagnitude = sqrt(
+                    let rotationMagnitude = sqrt(
                         self.accRotation.x * self.accRotation.x +
                         self.accRotation.y * self.accRotation.y +
                         self.accRotation.z * self.accRotation.z
                     )
                     
-                    if accRotationMagnitude > self.accRotationThreshold {
-                        self.onSteadyMovementChanged?(["timestamp": Date().timeIntervalSince1970])
+                    self.accRotationMagnitude = rotationMagnitude
+                    
+                    if rotationMagnitude > self.accRotationThreshold {
+//                        self.onSteadyMovementChanged?(["timestamp": Date().timeIntervalSince1970])
+                        forceMotionChange = true
                         self.accRotation = (0.0, 0.0, 0.0)
+                        self.accRotationMagnitude = 0.0
                     }
+                }
+                
+                if motion != self.lastMotionClassification || forceMotionChange {
+                    // TODO: IF motion == steady clean vector
+                    // accRotation = (0, 0, 0)
+                    self.accRotation = (0.0, 0.0, 0.0)
+                    self.lastMotionClassification = motion
+                    self.onMotionChanged?(["motion": motion])
                 }
                 
                 self.lastMotionClassification = motion
@@ -357,6 +363,14 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
   override public func willMove(toSuperview newSuperview: UIView?) {
     super.willMove(toSuperview: newSuperview)
 
+    if enableMotionAware {
+        SFSpeechRecognizer.requestAuthorization { status in
+            DispatchQueue.main.async {
+                print("Speech permission status: \(status)")
+            }
+        }
+    }
+      
     if newSuperview != nil {
       fpsSampleCollector.start()
       if !isMounted {
@@ -425,7 +439,7 @@ public final class CameraView: UIView, CameraSessionDelegate, PreviewViewDelegat
       // Input Camera Device
       config.cameraId = cameraId as? String
       config.isMirrored = isMirrored
-      config.enableMicInputChanges = enableMicInputChanges
+      config.enableMotionAware = enableMotionAware
       // Photo
       if photo {
         config.photo = .enabled(config: CameraConfiguration.Photo(qualityBalance: getPhotoQualityBalance(),

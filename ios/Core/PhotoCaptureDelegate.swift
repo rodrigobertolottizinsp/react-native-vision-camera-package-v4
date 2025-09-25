@@ -52,8 +52,10 @@ class PhotoCaptureDelegate: GlobalReferenceHolder, AVCapturePhotoCaptureDelegate
     }
 
     // onShutter(..) event
-    cameraSessionDelegate?.onCaptureShutter(shutterType: .photo)
+    //  cameraSessionDelegate?.onCaptureShutter(shutterType: .snapshot)
   }
+    
+
 
   func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
     defer {

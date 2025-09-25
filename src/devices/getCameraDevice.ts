@@ -39,6 +39,7 @@ export function getCameraDevice(devices: CameraDevice[], position: CameraPositio
   const filtered = devices.filter((d) => d.position === position)
 
   let bestDevice = filtered[0]
+
   if (bestDevice == null) return undefined
 
   // Compare each device using a point scoring system

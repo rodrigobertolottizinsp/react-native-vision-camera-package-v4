@@ -83,12 +83,10 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
   }
 
   val onMicInput = { db: String, chunkCount: Int, totalChunks: Int  ->
-    Log.d("CameraView", "onMicInput called with db: $db")
     onMicInputChanged(db, chunkCount, totalChunks)
   }
 
   val onMotion = { motion: String ->
-    Log.d("CameraView", "onMotion called with motion: $motion")
     onMotionChanged(motion)
   }
 
@@ -96,7 +94,7 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
     onSteadyMovementChanged(timestamp)
   }
 
-  cameraSession.startRecording(audio, options, callback, onError, enableMicInputChanges, onMicInput, onMotion, onSteadyMovement)
+  cameraSession.startRecording(audio, options, callback, onError, enableMotionAware, onMicInput, onMotion, onSteadyMovement)
 }
 
 fun isMicrophoneAvailable(context: Context): Boolean {

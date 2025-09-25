@@ -22,7 +22,7 @@ final class CameraConfiguration {
   var video: OutputConfiguration<Video> = .disabled
   var codeScanner: OutputConfiguration<CodeScanner> = .disabled
   var isMirrored = false
-  var enableMicInputChanges = false
+  var enableMotionAware = false
   // Location
   var enableLocation = false
 
@@ -61,7 +61,7 @@ final class CameraConfiguration {
       video = other.video
       codeScanner = other.codeScanner
       isMirrored = other.isMirrored
-      enableMicInputChanges = other.enableMicInputChanges
+      enableMotionAware = other.enableMotionAware
       enableLocation = other.enableLocation
       videoStabilizationMode = other.videoStabilizationMode
       outputOrientation = other.outputOrientation
@@ -124,7 +124,7 @@ final class CameraConfiguration {
       inputChanged = left?.cameraId != right.cameraId
       // photo, video, codeScanner
       outputsChanged = inputChanged || left?.photo != right.photo || left?.video != right.video
-        || left?.codeScanner != right.codeScanner || left?.isMirrored != right.isMirrored || left?.enableMicInputChanges != right.enableMicInputChanges
+        || left?.codeScanner != right.codeScanner || left?.isMirrored != right.isMirrored || left?.enableMotionAware != right.enableMotionAware
       // videoStabilizationMode
       videoStabilizationChanged = outputsChanged || left?.videoStabilizationMode != right.videoStabilizationMode
       // orientation

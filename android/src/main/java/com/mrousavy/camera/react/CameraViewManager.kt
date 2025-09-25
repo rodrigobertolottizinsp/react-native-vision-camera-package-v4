@@ -115,9 +115,9 @@ class CameraViewManager : ViewGroupManager<CameraView>() {
     view.enableZoomGesture = enableZoomGesture
   }
 
-  @ReactProp(name = "enableMicInputChanges")
-  fun setEnableMicInputChanges(view: CameraView, enableMicInputChanges: Boolean) {
-    view.enableMicInputChanges = enableMicInputChanges
+  @ReactProp(name = "enableMotionAware")
+  fun setEnableMotionAware(view: CameraView, enableMotionAware: Boolean) {
+    view.enableMotionAware = enableMotionAware
   }
 
   @ReactProp(name = "videoStabilizationMode")

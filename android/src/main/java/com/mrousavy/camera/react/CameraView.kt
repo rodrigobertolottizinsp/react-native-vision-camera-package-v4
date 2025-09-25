@@ -98,7 +98,7 @@ class CameraView(context: Context) :
       updateZoomGesture()
     }
 
-  var enableMicInputChanges = false
+  var enableMotionAware = false
     set(value) {
       field = value
     }
@@ -273,8 +273,9 @@ class CameraView(context: Context) :
               putExtra("zoomLevel", zoom)
             }
             context.sendBroadcast(intent)
+
             onZoomChanged(zoom.toDouble())
-            if (enableMicInputChanges) {
+            if (enableMotionAware) {
 
               //handle zoom state changes
               // 🚀 Notify zooming start

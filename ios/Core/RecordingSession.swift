@@ -9,6 +9,7 @@
 import AVFoundation
 import CoreLocation
 import Foundation
+import Speech
 
 // MARK: - RecordingSession
 
@@ -19,7 +20,7 @@ import Foundation
  It also synchronizes buffers to the CMTime by the CaptureSession so that late frames are removed from the beginning and added
  towards the end (useful e.g. for videoStabilization).
  */
-final class RecordingSession {
+final class RecordingSession: NSObject, SFSpeechRecognizerDelegate {
   private let clock: CMClock
   private let assetWriter: AVAssetWriter
   private var videoTrack: Track?
@@ -34,12 +35,19 @@ final class RecordingSession {
   private var lastSilence = true
   private var silenceInterval = 0
   var onLoudnessDetected: ((String, Int, Int) -> Void)?
-
+  var onTranscribedTextChanged: ((String?) -> Void)?
+    
   private var duplicateAudioWriter: AVAssetWriter?
   private var duplicateAudioInput: AVAssetWriterInput?
   private var duplicateAudioURL: URL?
   private var audioChunkCounter: Int = 1
 
+  private let audioEngine = AVAudioEngine()
+  private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+  private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+  private var recognitionTask: SFSpeechRecognitionTask?
+  private let audioSession = AVAudioSession.sharedInstance()
+    
   private let lock = DispatchSemaphore(value: 1)
   /**
    Gets the file URL of the recorded video.
@@ -71,6 +79,12 @@ final class RecordingSession {
     return isVideoTrackFinished && isAudioTrackFinished
   }
 
+  var transcribedText: String = "" {
+      didSet {
+          print("Transcript: \(transcribedText)")
+      }
+  }
+    
   /**
    Get the presentation orientation of the video.
    */
@@ -229,6 +243,7 @@ final class RecordingSession {
     }
   }
 
+    
   /**
    Requests the RecordingSession to temporarily pause writing frames at the current time of the provided synchronization clock.
    The RecordingSession will continue to write video frames and audio frames that have been produced (but not yet consumed)
@@ -260,6 +275,77 @@ final class RecordingSession {
     audioTrack?.resume()
   }
 
+    //START NEW VOICE DETECT
+    func startRecordingWithTranscription() throws {
+        let status = SFSpeechRecognizer.authorizationStatus()
+        guard status == .authorized else {
+            return // Do nothing if not authorized
+        }
+        // Cancel previous task
+        recognitionTask?.cancel()
+        self.recognitionTask = nil
+        
+        // Audio session setup
+//        try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+//        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        guard let recognitionRequest = recognitionRequest else {
+            throw NSError(domain: "RecordingSession", code: 1)
+        }
+        
+        let inputNode = audioEngine.inputNode
+        recognitionRequest.shouldReportPartialResults = true
+        
+        // Track the index of the last printed word
+        var lastPrintedWordIndex: Int = -1
+        
+        // Start recognition
+        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
+            if let result = result {
+                let segments = result.bestTranscription.segments
+                
+                // Check if there's a new word since last time
+                if let lastSegment = segments.last, segments.count - 1 > lastPrintedWordIndex {
+                    print("New word: \(lastSegment.substring)")
+                    lastPrintedWordIndex = segments.count - 1
+                }
+                
+                self.onTranscribedTextChanged?(result.bestTranscription.formattedString ?? "")
+
+                                // Keep the full text if you still need it
+                self.transcribedText = result.bestTranscription.formattedString
+            }
+            
+            if error != nil || (result?.isFinal ?? false) {
+                self.audioEngine.stop()
+                inputNode.removeTap(onBus: 0)
+                self.recognitionRequest = nil
+                self.recognitionTask = nil
+            }
+        }
+        
+        // Install tap on the audio engine input node
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, when in
+            self.recognitionRequest?.append(buffer)
+        }
+        
+        // Start audio engine
+        audioEngine.prepare()
+        try audioEngine.start()
+        print("Recording with transcription started")
+    }
+
+    
+    func stopRecordingWithTranscription() {
+         audioEngine.stop()
+         audioEngine.inputNode.removeTap(onBus: 0)
+         recognitionRequest?.endAudio()
+         print("Transcript stopped")
+     }
+    
+    //END NEW VOICE DETECT
   func append(buffer: CMSampleBuffer, ofType type: TrackType) throws {
     guard !isFinishing else {
       // Session is already finishing, can't write anything more
@@ -461,7 +547,7 @@ final class RecordingSession {
         let db = 20.0 * log10(rms / referenceAmplitude)
 
         // Classify as talking if dB is above threshold
-        let talkingThreshold: Float = -5.0 // Adjust based on testing
+        let talkingThreshold: Float = -3.0 // Adjust based on testing
         let isTalking = db > talkingThreshold
 
         // Option: Normalize to 0–100 scale (uncomment to use instead of dB)
@@ -537,6 +623,7 @@ final class RecordingSession {
       self.completionHandler(self, self.assetWriter.status, self.assetWriter.error)
     }
   }
+    
     private func isMicrophoneAvailable() -> Bool {
         let audioSession = AVAudioSession.sharedInstance()
         do {

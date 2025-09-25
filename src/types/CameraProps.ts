@@ -303,7 +303,7 @@ export interface CameraProps extends ViewProps {
    * @default false (back camera), true (front camera)
    */
   isMirrored?: boolean
-  enableMicInputChanges?: boolean
+  enableMotionAware?: boolean
   //#region Events
   /**
    * Called when any kind of runtime error occured.

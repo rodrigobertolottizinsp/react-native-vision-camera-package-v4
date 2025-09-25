@@ -19,7 +19,7 @@ extension CameraSession {
     //onMicInputChanged: @escaping (_ loudness: Bool) -> Void
   func startRecording(options: RecordVideoOptions,
                       onVideoRecorded: @escaping (_ video: Video) -> Void,
-                      onError: @escaping (_ error: CameraError) -> Void, onMicInputChanged: ((_ loudness: String, _ chunkCount: Int, _ totalChunks: Int) -> Void)? = nil) {
+                      onError: @escaping (_ error: CameraError) -> Void, onMicInputChanged: ((_ loudness: String, _ chunkCount: Int, _ totalChunks: Int) -> Void)? = nil, onTranscribedTextChanged: ((_ transcribedText: String) -> Void)? = nil) {
     // Run on Camera Queu
     CameraQueues.cameraQueue.async {
       let start = DispatchTime.now()
@@ -36,6 +36,7 @@ extension CameraSession {
       }
 
       let enableAudio = self.configuration?.audio != .disabled
+
       // Callback for when the recording ends
       let onFinish = { (recordingSession: RecordingSession, status: AVAssetWriter.Status, error: Error?) in
         defer {
@@ -90,6 +91,8 @@ extension CameraSession {
       do {
         // Orientation is relative to our current output orientation
         let orientation = self.outputOrientation.relativeTo(orientation: videoOutput.orientation)
+        
+        let recordMicrophone = self.configuration?.enableMotionAware ?? false
 
         // Create RecordingSession for the temp file
         let recordingSession = try RecordingSession(url: options.path,
@@ -126,10 +129,10 @@ extension CameraSession {
 
         // start recording session with or without audio.
         try recordingSession.start()
+        
+          
         self.didCancelRecording = false
         self.recordingSession = recordingSession
-
-        let recordMicrophone = self.configuration?.enableMicInputChanges ?? false
 
         if recordMicrophone, let onMicInputChanged = onMicInputChanged {
           recordingSession.onLoudnessDetected = { [weak self] db, chunkCount, totalChunks in
@@ -137,6 +140,15 @@ extension CameraSession {
           }
         } else {
           recordingSession.onLoudnessDetected = nil
+        }
+          
+        if recordMicrophone, let onTranscribedTextChanged = onTranscribedTextChanged {
+          try recordingSession.startRecordingWithTranscription()
+          recordingSession.onTranscribedTextChanged = { [weak self] transcribedText in
+              onTranscribedTextChanged(transcribedText ?? "")
+          }
+        } else {
+          recordingSession.onTranscribedTextChanged = nil
         }
           
           
@@ -154,10 +166,14 @@ extension CameraSession {
    Stops an active recording.
    */
   func stopRecording(promise: Promise) {
+    let recordMicrophone = self.configuration?.enableMotionAware ?? false
     CameraQueues.cameraQueue.async {
       withPromise(promise) {
         guard let recordingSession = self.recordingSession else {
           throw CameraError.capture(.noRecordingInProgress)
+        }
+        if recordMicrophone {
+            try recordingSession.stopRecordingWithTranscription()
         }
         recordingSession.stop()
         return nil

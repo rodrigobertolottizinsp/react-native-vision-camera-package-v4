@@ -118,6 +118,7 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
     this.onZoomChanged = this.onZoomChanged.bind(this)
     this.onZoomStateChanged = this.onZoomStateChanged.bind(this)
     this.onMicInputChanged = this.onMicInputChanged.bind(this)
+    this.onTranscribedTextChanged = this.onTranscribedTextChanged.bind(this)
     this.onMotionChanged = this.onMotionChanged.bind(this)
     this.onSteadyMovementChanged = this.onSteadyMovementChanged.bind(this)
     this.onPositionChanged = this.onPositionChanged.bind(this)
@@ -610,6 +611,10 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
     this.props.onMicInputChanged?.(event.nativeEvent.db, event.nativeEvent.chunkCount, event.nativeEvent.totalChunks)
   }
 
+  private onTranscribedTextChanged(event: NativeSyntheticEvent<{ transcribedText: string }>): void {
+    this.props.onTranscribedTextChanged?.(event.nativeEvent.transcribedText)
+  }
+
   private onMotionChanged(event: NativeSyntheticEvent<string>): void {
     this.props.onMotionChanged?.(event.nativeEvent?.motion)
   }
@@ -700,7 +705,7 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
         minFps={minFps}
         maxFps={maxFps}
         isMirrored={props.isMirrored ?? shouldBeMirrored}
-        enableMicInputChanges={props.enableMicInputChanges ?? false}
+        enableMotionAware={props.enableMotionAware ?? false}
         onViewReady={this.onViewReady}
         onAverageFpsChanged={enableFpsGraph ? this.onAverageFpsChanged : undefined}
         onInitialized={this.onInitialized}
@@ -708,6 +713,7 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
         onZoomChanged={this.onZoomChanged}
         onZoomStateChanged={this.onZoomStateChanged}
         onMicInputChanged={this.onMicInputChanged}
+        onTranscribedTextChanged={this.onTranscribedTextChanged}
         onPositionChanged={this.onPositionChanged}
         onMotionChanged={this.onMotionChanged}
         onSteadyMovementChanged={this.onSteadyMovementChanged}

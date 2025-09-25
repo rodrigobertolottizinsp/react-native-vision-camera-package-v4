@@ -38,18 +38,21 @@ extension CameraView {
   @objc
   final func onPinch(_ gesture: UIPinchGestureRecognizer) {
     let scale = max(min(gesture.scale * pinchScaleOffset, cameraSession.maxZoom), CGFloat(1.0))
-
+    let prevZoomVal = zoom
+      
+    zoom = NSNumber(value: scale)
+      
     // Notify JS of zoom factor change
     onZoomChanged?([
       "zoomFactor": scale
     ])
 
     // Apply zoom prop
-    zoom = NSNumber(value: scale)
     zoomState.value = CGFloat(zoom)
     didSetProps([])
 
-      if enableMicInputChanges {
+      
+      if enableMotionAware && prevZoomVal != zoom {
           // Notify JS that zooming has started (only once)
           if !isZooming {
               isZooming = true
@@ -58,7 +61,7 @@ extension CameraView {
           
           // Restart zoom end timer
           zoomEndTimer?.invalidate()
-          zoomEndTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
+          zoomEndTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
               guard let self = self else { return }
               self.isZooming = false
               onZoomStateChanged?(["zooming": false])

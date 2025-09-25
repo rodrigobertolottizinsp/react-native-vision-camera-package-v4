@@ -30,7 +30,7 @@ RCT_EXPORT_VIEW_PROPERTY(enableDepthData, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(enablePortraitEffectsMatteDelivery, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(enableBufferCompression, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(isMirrored, BOOL);
-RCT_EXPORT_VIEW_PROPERTY(enableMicInputChanges, BOOL);
+RCT_EXPORT_VIEW_PROPERTY(enableMotionAware, BOOL);
 // use cases
 RCT_EXPORT_VIEW_PROPERTY(preview, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(photo, BOOL);
@@ -72,6 +72,7 @@ RCT_EXPORT_VIEW_PROPERTY(codeScannerOptions, NSDictionary);
 RCT_EXPORT_VIEW_PROPERTY(onZoomChanged, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(onZoomStateChanged, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(onMicInputChanged, RCTDirectEventBlock);
+RCT_EXPORT_VIEW_PROPERTY(onTranscribedTextChanged, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(onMotionChanged, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(onSteadyMovementChanged, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(onPositionChanged, RCTDirectEventBlock);

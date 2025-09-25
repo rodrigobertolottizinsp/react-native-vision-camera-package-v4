@@ -40,6 +40,13 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAud
                    "totalChunks": totalChunks
                ])
            }
+        },
+        onTranscribedTextChanged: { [self] transcribedText in
+           DispatchQueue.main.async {
+               self.onTranscribedTextChanged?([
+                   "transcribedText": transcribedText
+               ])
+           }
         }
       )
     } catch {

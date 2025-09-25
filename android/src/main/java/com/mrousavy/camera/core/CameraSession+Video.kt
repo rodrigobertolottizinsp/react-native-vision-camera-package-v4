@@ -70,7 +70,7 @@ fun CameraSession.startRecording(
         options: RecordVideoOptions,
         callback: (video: Video) -> Unit,
         onError: (error: CameraError) -> Unit,
-        enableMicInputChanges: Boolean,
+        enableMotionAware: Boolean,
         onLoudness: ((String, Int, Int) -> Unit)? = null,
         onMotionChanged: ((String) -> Unit)? = null,
         onSteadyMovementChanged: ((Number) -> Unit)? = null
@@ -111,7 +111,7 @@ fun CameraSession.startRecording(
                 if (options.zAssistMotionEnabled) {
                     startAccelerometerListener(context, onMotionChanged, onSteadyMovementChanged)
                 }
-                if (enableMicInputChanges) {
+                if (enableMotionAware) {
                     val dir = File(context.filesDir, "chunks")
                     if (!dir.exists()) dir.mkdirs()
 
@@ -145,7 +145,7 @@ fun CameraSession.startRecording(
             is VideoRecordEvent.Finalize -> {
                 // 🔥 Finalize audio chunk if needed
 //                Log.i("AudioChunk", "finalized audio rec in ${audioChunkState.silence}")
-                if (enableMicInputChanges) {
+                if (enableMotionAware) {
                     if (audioChunkState.aacCodec != null) {
                         Log.i("AudioChunk123", "Finalizing last chunk on finalize...")
                         audioChunkState.aacCodec?.stop()
@@ -231,7 +231,7 @@ val accRotationThresholdDeg = 25f
 val accRotationThresholdRad = Math.toRadians(accRotationThresholdDeg.toDouble()).toFloat()
 private var lastSensorTimestamp: Long = 0L
 private var onSteadyMovementChanged: ((Map<String, Any>) -> Unit)? = null
-
+private var accRotationMagnitude = 0
 private fun calculateLoudness(buffer: ShortArray, readSize: Int): Pair<Float, Boolean> {
     var sum = 0f
     for (i in 0 until readSize) {
@@ -336,6 +336,8 @@ private fun startAudioLoudnessDetection(
                         audioState.aacCodec?.start()
                     } else {
                         //talking resumes, notify
+                        Log.e("IS TALKING?", "ON LOUDNESS DETECTED!!!")
+
                         onLoudnessDetected("", -1, -1)
                     }
                     audioState.lastSilence = audioState.silence
@@ -413,6 +415,8 @@ private fun startAccelerometerListener(context: Context, onMotionChanged: ((Stri
     val accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     val gyroscope = sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
+    lastMotionClassification = null
+
     startTime = System.currentTimeMillis()
     var currentZoomLevel = 1f
     var gyroscopeValues = FloatArray(3) { 0f }
@@ -440,6 +444,8 @@ private fun startAccelerometerListener(context: Context, onMotionChanged: ((Stri
                 Sensor.TYPE_ACCELEROMETER -> {
                     val elapsedSeconds = ((System.currentTimeMillis() - startTime) / 1000f)
                     val formattedElapsedSeconds = String.format(Locale.US, "%.3f", elapsedSeconds).toFloat()
+
+                    var forceMotionChange = false
 
                     val xa = event.values[0] / 9.80665f
                     val ya = event.values[1] / 9.80665f
@@ -493,7 +499,7 @@ private fun startAccelerometerListener(context: Context, onMotionChanged: ((Stri
 
 
                             var motion = when {
-                                netGyro <= 0.1 -> "Steady"
+                                netGyro <= 0.15 -> "Steady"
                                 netGyro <= 1.0 -> "Panning"
                                 else -> "Unsteady"
                             }
@@ -504,6 +510,10 @@ private fun startAccelerometerListener(context: Context, onMotionChanged: ((Stri
 
                             if (motion == "Panning") {
                                 panningTime = System.currentTimeMillis().toDouble()
+                                if (lastMotionClassification == "Steady" && accRotationMagnitude > accRotationThresholdRad){
+                                    motion = "Steady"
+                                    forceMotionChange = true
+                                }
                             }
 
                             if (motion == "Steady" && accDev > 0.03) {
@@ -519,10 +529,12 @@ private fun startAccelerometerListener(context: Context, onMotionChanged: ((Stri
                             //new
                             if (motion == "Steady") {
                                 val magnitude = sqrt(accRotation[0].pow(2) + accRotation[1].pow(2) + accRotation[2].pow(2))
-                                Log.i(CameraSession.TAG, "Motion is : " + motion + " magnitude " + magnitude + " accRotationThresholdRad " + accRotationThresholdRad)
+                                accRotationMagnitude = magnitude.toInt()
                                 if (magnitude > accRotationThresholdRad) {
-                                    onSteadyMovementChanged?.invoke((now / 1000.0).toInt())
+//                                    onSteadyMovementChanged?.invoke((now / 1000.0).toInt())
+                                    forceMotionChange = true
                                     accRotation = FloatArray(3) { 0f }
+                                    accRotationMagnitude = 0
                                 }
                             }
                             //end new
@@ -551,9 +563,10 @@ private fun startAccelerometerListener(context: Context, onMotionChanged: ((Stri
                                 motion = lastMotionClassification.toString()
                             }
 
-                            if (motion != lastMotionClassification) {
+                            if (motion != lastMotionClassification || forceMotionChange) {
                                 accRotation = FloatArray(3) { 0f }  // <--- Add this
                                 lastMotionClassification = motion
+
                                 onMotionChanged?.invoke(motion)
                             }
                         }

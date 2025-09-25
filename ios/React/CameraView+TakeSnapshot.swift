@@ -23,7 +23,7 @@ extension CameraView {
       let options = try TakeSnapshotOptions(fromJSValue: optionsDictionary)
 
       // Play shutter effect (JS event)
-      self.onCaptureShutter(shutterType: .snapshot)
+       self.onCaptureShutter(shutterType: .snapshot)
 
       // Grab latest frame, convert to UIImage, and save it
       let orientation = Orientation.portrait.relativeTo(orientation: snapshot.orientation)
