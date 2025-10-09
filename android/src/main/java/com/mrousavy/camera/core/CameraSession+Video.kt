@@ -31,6 +31,7 @@ import com.mrousavy.camera.core.extensions.getCameraError
 import com.mrousavy.camera.core.types.RecordVideoOptions
 import com.mrousavy.camera.core.types.Video
 import okhttp3.internal.and
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
@@ -41,6 +42,9 @@ import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.sqrt
+import org.vosk.Model
+import org.vosk.Recognizer
+import org.vosk.android.StorageService
 
 //private val accelerometerData = mutableListOf<FloatArray>() // Shared list for accelerometer data
 private val accelerometerData = CopyOnWriteArrayList<FloatArray>()
@@ -50,6 +54,10 @@ private var audioRecord: AudioRecord? = null
 private var audioThread: Thread? = null
 private var isAudioRecording = false
 //end new
+
+private var voskModel: Model? = null
+private var voskRecognizer: Recognizer? = null
+
 
 data class AudioChunkState(
         var audioChunkFile: File? = null,
@@ -63,6 +71,52 @@ data class AudioChunkState(
         var silenceInterval: Int = 0
 )
 
+private fun safeStopAndRelease(audioState: AudioChunkState) {
+    synchronized(audioState) {
+        // Stop & release codec safely
+        audioState.aacCodec?.let { codec ->
+            try {
+                codec.stop()
+            } catch (e: IllegalStateException) {
+                Log.w("AudioState", "Codec already stopped: ${e.message}")
+            } catch (e: Exception) {
+                Log.w("AudioState", "Codec stop error: ${e.message}")
+            } finally {
+                try {
+                    codec.release()
+                } catch (e: Exception) {
+                    Log.w("AudioState", "Codec release error: ${e.message}")
+                }
+                audioState.aacCodec = null
+            }
+        }
+
+        // Stop & release muxer safely
+        audioState.muxer?.let { muxer ->
+            if (audioState.muxerStarted) {
+                try {
+                    muxer.stop()
+                } catch (e: IllegalStateException) {
+                    Log.w("AudioState", "Muxer already stopped: ${e.message}")
+                } catch (e: Exception) {
+                    Log.w("AudioState", "Muxer stop error: ${e.message}")
+                } finally {
+                    audioState.muxerStarted = false
+                }
+            }
+            try {
+                muxer.release()
+            } catch (e: Exception) {
+                Log.w("AudioState", "Muxer release error: ${e.message}")
+            } finally {
+                audioState.muxer = null
+                audioState.trackIndex = -1
+            }
+        }
+    }
+}
+
+
 @OptIn(ExperimentalPersistentRecording::class)
 @SuppressLint("MissingPermission", "RestrictedApi")
 fun CameraSession.startRecording(
@@ -73,7 +127,8 @@ fun CameraSession.startRecording(
         enableMotionAware: Boolean,
         onLoudness: ((String, Int, Int) -> Unit)? = null,
         onMotionChanged: ((String) -> Unit)? = null,
-        onSteadyMovementChanged: ((Number) -> Unit)? = null
+        onSteadyMovementChanged: ((Number) -> Unit)? = null,
+        onTranscribedTextChanged: ((String) -> Unit)? = null,
 ) {
     if (camera == null) throw CameraNotReadyError()
     if (recording != null) throw RecordingInProgressError()
@@ -121,18 +176,25 @@ fun CameraSession.startRecording(
                     audioChunkState.trackIndex = -1
 
                     audioChunkState.aacCodec = MediaCodec.createEncoderByType("audio/mp4a-latm")
-                    val format = MediaFormat.createAudioFormat("audio/mp4a-latm", 44100, 1)
+                    val format = MediaFormat.createAudioFormat("audio/mp4a-latm", 16000, 1)
                     format.setInteger(MediaFormat.KEY_BIT_RATE, 64000)
                     format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
                     format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 8192)
                     audioChunkState.aacCodec?.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
                     audioChunkState.aacCodec?.start()
-                    startAudioLoudnessDetection(context, uniqueId, audioChunkState) { db, chunkCount, totalChunks ->
-                        Log.i("LOUDNESS", "Detected $db})")
-                        //set last
-                        onLoudness?.invoke(db, chunkCount, totalChunks)
-                        // You can also save this data to a list or call a callback
-                    }
+                    startAudioLoudnessDetection(
+                            context,
+                            uniqueId,
+                            audioChunkState,
+                            { path, chunkCount, totalChunks ->
+                                onLoudness?.invoke(path, chunkCount, totalChunks)
+                            },
+                            { text ->
+                                if (onTranscribedTextChanged != null) {
+                                    onTranscribedTextChanged?.invoke(text)
+                                }
+                            }
+                    )
                 }
             }
 
@@ -143,18 +205,17 @@ fun CameraSession.startRecording(
             is VideoRecordEvent.Status -> Log.i(CameraSession.TAG, "Status update! Recorded ${event.recordingStats.numBytesRecorded} bytes.")
 
             is VideoRecordEvent.Finalize -> {
-                // 🔥 Finalize audio chunk if needed
-//                Log.i("AudioChunk", "finalized audio rec in ${audioChunkState.silence}")
                 if (enableMotionAware) {
                     if (audioChunkState.aacCodec != null) {
-                        Log.i("AudioChunk123", "Finalizing last chunk on finalize...")
                         audioChunkState.aacCodec?.stop()
                         audioChunkState.aacCodec?.release()
                         audioChunkState.aacCodec = null
 
-                        if (audioChunkState.muxerStarted) {
-                            audioChunkState.muxer?.stop()
-                        }
+//                        if (audioChunkState.muxerStarted) {
+//                            audioChunkState.muxer?.stop()
+//                        }
+                        safeStopAndRelease(audioChunkState)
+
                         audioChunkState.muxer?.release()
                         audioChunkState.muxer = null
                         audioChunkState.muxerStarted = false
@@ -201,7 +262,6 @@ fun CameraSession.startRecording(
 
                 // Prepare output result
                 val durationMs = event.recordingStats.recordedDurationNanos / 1_000_000
-                Log.i(CameraSession.TAG, "Successfully completed video recording! Captured ${durationMs.toDouble() / 1_000.0} seconds.")
                 val path = event.outputResults.outputUri.path
                         ?: throw UnknownRecorderError(false, null)
                 val size = videoOutput.attachedSurfaceResolution ?: Size(0, 0)
@@ -232,6 +292,8 @@ val accRotationThresholdRad = Math.toRadians(accRotationThresholdDeg.toDouble())
 private var lastSensorTimestamp: Long = 0L
 private var onSteadyMovementChanged: ((Map<String, Any>) -> Unit)? = null
 private var accRotationMagnitude = 0
+private val sentWords = mutableSetOf<String>() // track sent words
+
 private fun calculateLoudness(buffer: ShortArray, readSize: Int): Pair<Float, Boolean> {
     var sum = 0f
     for (i in 0 until readSize) {
@@ -248,13 +310,46 @@ private fun calculateLoudness(buffer: ShortArray, readSize: Int): Pair<Float, Bo
     return db to isTalking
 }
 
+fun downsampleTo16kHz(input: ShortArray, inputRate: Int = 44100): ShortArray {
+    val factor = inputRate / 16000
+    return ShortArray(input.size / factor) { i ->
+        input[i * factor]
+    }
+}
+
 private fun startAudioLoudnessDetection(
         context: Context,
         fileUUID: String,
         audioState: AudioChunkState,
-        onLoudnessDetected: (path: String, chunkCount: Int, totalChunks: Int) -> Unit
+        onLoudnessDetected: (path: String, chunkCount: Int, totalChunks: Int) -> Unit,
+        onTranscribedTextChanged: (text: String) -> Unit
 ) {
-    val sampleRate = 44100
+    try {
+        StorageService.unpack(
+                context,
+                "vosk-model-small-en-us-0.15",
+                "model",
+                { unpackedModel ->
+                    try {
+                        voskModel = unpackedModel
+                        voskRecognizer = Recognizer(voskModel, 16000.0f)
+                    } catch (e: Exception) {
+                        voskRecognizer = null
+                        voskModel = null
+                    }
+                },
+                { exception ->
+                    Log.e("VOSK", "Failed to unpack Vosk model: ${exception.message}", exception)
+                    voskModel = null
+                    voskRecognizer = null
+                }
+        )
+    } catch (e: Exception) {
+        Log.e("VOSK", "Unexpected error while loading model: ${e.message}", e)
+        voskModel = null
+        voskRecognizer = null
+    }
+    val sampleRate = 16000
     val bufferSize = AudioRecord.getMinBufferSize(
             sampleRate,
             AudioFormat.CHANNEL_IN_MONO,
@@ -283,6 +378,70 @@ private fun startAudioLoudnessDetection(
             if (read > 0) {
                 val (db, isTalking) = calculateLoudness(buffer, read)
 
+                try {
+                    if (read > 0) {
+                        val recognizer = voskRecognizer
+                        if (recognizer == null) {
+                            Log.w("VOSK", "Recognizer not initialized — skipping recognition frame.")
+                        } else {
+                            try {
+                                val bytes = ByteArray(read * 2)
+                                for (i in 0 until read) {
+                                    bytes[i * 2] = (buffer[i].toInt() and 0xFF).toByte()
+                                    bytes[i * 2 + 1] = ((buffer[i].toInt() shr 8) and 0xFF).toByte()
+                                }
+
+                                val now = System.currentTimeMillis()
+                                // 3 listas de igual dimension
+                                // lista con palabras del model
+                                // lista con la ultima vez que se actualizo cada palabra (timestamp)
+                                // lista con un booleano que diga si se mando o no
+
+                                // cuando obtengo una nueva palabra, agrego una nueva palabra a la lista
+                                // usando un delay de aprox 200 ms
+                                if (recognizer.acceptWaveForm(bytes, bytes.size)) {
+                                    // ✅ Final result
+                                    val finalResult = recognizer.result
+                                    val text = JSONObject(finalResult).optString("text", "").trim()
+                                    if (text.isNotEmpty()) {
+                                        // remove already sent words
+                                        val filteredText = text.split("\\s+".toRegex())
+                                                .filter { it !in sentWords }
+                                                .joinToString(" ")
+
+                                        if (filteredText.isNotEmpty()) {
+                                            onTranscribedTextChanged(filteredText)
+                                        }
+
+                                        // clean sent words for next segment
+                                        sentWords.clear()
+                                    }
+                                 } else {
+                                    // ⚙️ Partial result
+                                    val partialText = JSONObject(recognizer.partialResult).optString("partial", "").trim()
+                                    if (partialText.isNotEmpty()) {
+                                        // split partial text and filter out previously sent words
+                                        val partialWords = partialText.split("\\s+".toRegex())
+                                        val newWords = partialWords.filter { it !in sentWords }
+
+                                        if (newWords.isNotEmpty()) {
+                                            // mark them as sent
+                                            sentWords.addAll(newWords)
+                                            // send only new ones
+                                            onTranscribedTextChanged(newWords.joinToString(" "))
+                                        }
+                                    }
+                                }
+
+                            } catch (e: Exception) {
+                                Log.e("VOSK", "Error during recognition: ${e.message}", e)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("VOSK", "Unexpected error processing audio chunk: ${e.message}", e)
+                }
+
                 if (!isTalking) {
                     audioState.silenceInterval++
 
@@ -301,9 +460,11 @@ private fun startAudioLoudnessDetection(
                         audioState.aacCodec?.release()
                         audioState.aacCodec = null
 
-                        if (audioState.muxerStarted) {
-                            audioState.muxer?.stop()
-                        }
+//                        if (audioState.muxerStarted) {
+//                            audioState.muxer?.stop()
+//                        }
+                        safeStopAndRelease(audioState)
+
                         audioState.muxer?.release()
                         audioState.muxer = null
                         audioState.muxerStarted = false
@@ -313,7 +474,7 @@ private fun startAudioLoudnessDetection(
                         if (path != null) {
                             onLoudnessDetected(path, audioState.audioChunkCounter, -1)
                         } else {
-                            Log.i("AudioChunk", "NULL PATH!!!")
+                            Log.i("AudioChunk", "Error. Null path.")
                         }
 
                         audioState.audioChunkFile = null
@@ -336,8 +497,6 @@ private fun startAudioLoudnessDetection(
                         audioState.aacCodec?.start()
                     } else {
                         //talking resumes, notify
-                        Log.e("IS TALKING?", "ON LOUDNESS DETECTED!!!")
-
                         onLoudnessDetected("", -1, -1)
                     }
                     audioState.lastSilence = audioState.silence
@@ -367,6 +526,11 @@ private fun startAudioLoudnessDetection(
                         val encodedData = ByteBuffer.allocate(bufferInfo.size)
                         encodedData.put(outBuf)
                         encodedData.flip()
+
+                        if (audioState.muxer == null || audioState.aacCodec == null) {
+                            Log.w("AudioThread", "Skipping frame — muxer or codec already released")
+                            break
+                        }
 
                         if (!audioState.muxerStarted) {
                             val format = audioState.aacCodec!!.outputFormat
@@ -491,9 +655,6 @@ private fun startAccelerometerListener(context: Context, onMotionChanged: ((Stri
                             val netAcc = sqrt(avg[0] * avg[0] + avg[1] * avg[1] + avg[2] * avg[2])
                             val netGyro = sqrt(avg[3] * avg[3] + avg[4] * avg[4] + avg[5] * avg[5])
                             val netGyroSingle = sqrt(xg * xg + yg * yg + zg * zg)
-
-                            Log.i(CameraSession.TAG, " Gyro diff: " + (netGyro - netGyroSingle))
-
 
                             val accDev = abs(netAcc - 1.0)
 

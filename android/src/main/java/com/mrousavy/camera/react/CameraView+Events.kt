@@ -163,6 +163,13 @@ fun CameraView.invokeOnSteadyMovementChanged(timestamp: Number) {
   reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "steadyMovementChanged", event)
 }
 
+fun CameraView.invokeOnTranscribedTextChanged(text: String) {
+  val event = Arguments.createMap()
+  event.putString("transcribedText", text as String)
+  val reactContext = context as ReactContext
+  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "transcribedTextChanged", event)
+}
+
 fun CameraView.invokeOnCodeScanned(barcodes: List<Barcode>, scannerFrame: CodeScannerFrame) {
   val codes = Arguments.createArray()
   barcodes.forEach { barcode ->

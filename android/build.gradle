@@ -189,7 +189,7 @@ dependencies {
   implementation "androidx.camera:camera-video:${camerax_version}"
   implementation "androidx.camera:camera-view:${camerax_version}"
   implementation "androidx.camera:camera-extensions:${camerax_version}"
-
+  
   // Some Coroutines extension functions
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
 
@@ -201,6 +201,9 @@ dependencies {
     // On devices with Google Play Services, this can also download the CodeScanner model on-demand.
     implementation "com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0"
   }
+
+  implementation(name: 'jna-5.13.0', ext: 'aar')
+  implementation(name: 'vosk-android-0.3.38', ext: 'aar')
 
   if (enableFrameProcessors) {
     // Frame Processor integration (optional)

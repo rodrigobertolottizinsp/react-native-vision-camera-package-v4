@@ -222,5 +222,6 @@ class CameraSession(internal val context: Context, internal val callback: Callba
     fun onMicInputChanged(zoom: String, chunkCount: Int, totalChunks: Int)
     fun onMotionChanged(motion: String)
     fun onSteadyMovementChanged(timestamp: Number)
+    fun onTranscribedTextChanged(text: String)
   }
 }

@@ -407,4 +407,8 @@ class CameraView(context: Context) :
   override fun onSteadyMovementChanged(timestamp: Number){
      invokeOnSteadyMovementChanged(timestamp)
    }
+
+  override fun onTranscribedTextChanged(text: String){
+     invokeOnTranscribedTextChanged(text)
+   }
 }

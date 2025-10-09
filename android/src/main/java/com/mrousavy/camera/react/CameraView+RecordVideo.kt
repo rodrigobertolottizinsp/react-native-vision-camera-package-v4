@@ -94,7 +94,11 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
     onSteadyMovementChanged(timestamp)
   }
 
-  cameraSession.startRecording(audio, options, callback, onError, enableMotionAware, onMicInput, onMotion, onSteadyMovement)
+  val onTranscribedTextChanged = { text: String ->
+    onTranscribedTextChanged(text)
+  }
+
+  cameraSession.startRecording(audio, options, callback, onError, enableMotionAware, onMicInput, onMotion, onSteadyMovement, onTranscribedTextChanged)
 }
 
 fun isMicrophoneAvailable(context: Context): Boolean {

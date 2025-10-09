@@ -46,6 +46,7 @@ class CameraViewManager : ViewGroupManager<CameraView>() {
       .put("micInputChanged",MapBuilder.of("registrationName", "onMicInputChanged"))
       .put("motionChanged",MapBuilder.of("registrationName", "onMotionChanged"))
       .put("steadyMovementChanged",MapBuilder.of("registrationName", "onSteadyMovementChanged"))
+      .put("transcribedTextChanged",MapBuilder.of("registrationName", "onTranscribedTextChanged"))
       .build()
 
   override fun getName(): String = TAG

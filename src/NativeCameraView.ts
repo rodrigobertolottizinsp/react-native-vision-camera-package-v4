@@ -39,6 +39,7 @@ export type NativeCameraViewProps = Omit<
   | 'onMotionChanged'
   | 'onSteadyMovementChanged'
   | 'onPositionChanged'
+  | 'onTranscribedTextChanged'
 > & {
   // private intermediate props
   cameraId: string
