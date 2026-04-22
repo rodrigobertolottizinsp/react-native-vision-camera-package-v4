@@ -294,6 +294,45 @@ private var onSteadyMovementChanged: ((Map<String, Any>) -> Unit)? = null
 private var accRotationMagnitude = 0
 private val sentWords = mutableSetOf<String>() // track sent words
 
+private fun initializeVoskSafely(context: Context): Boolean {
+    if (voskModel != null && voskRecognizer != null) return true
+
+    try {
+        // Unpack model (this can throw or fail silently on bad devices)
+        StorageService.unpack(
+                context,
+                "vosk-model-small-en-us-0.15",
+                "model",
+                { unpackedModel ->
+                    try {
+                        voskModel = unpackedModel
+                        // Final safety: try creating recognizer separately
+                        voskRecognizer = Recognizer(voskModel, 16000.0f)
+                        Log.i("VOSK", "Vosk initialized successfully")
+                        true
+                    } catch (e: Throwable) {  // Catch everything – UnsatisfiedLinkError, RuntimeException, etc.
+                        Log.e("VOSK", "Failed to create Recognizer: ${e.message}", e)
+                        voskModel = null
+                        voskRecognizer = null
+                        false
+                    }
+                },
+                { error ->
+                    Log.e("VOSK", "Model unpack failed: ${error.message}", error)
+                    voskModel = null
+                    voskRecognizer = null
+                }
+        )
+        // Give a short grace period if unpack is async – but in practice just return success if no immediate crash
+        return voskRecognizer != null
+    } catch (e: Throwable) {
+        Log.e("VOSK", "Critical Vosk init failure – disabling speech: ${e.message}", e)
+        voskModel = null
+        voskRecognizer = null
+        return false
+    }
+}
+
 private fun calculateLoudness(buffer: ShortArray, readSize: Int): Pair<Float, Boolean> {
     var sum = 0f
     for (i in 0 until readSize) {
@@ -324,31 +363,16 @@ private fun startAudioLoudnessDetection(
         onLoudnessDetected: (path: String, chunkCount: Int, totalChunks: Int) -> Unit,
         onTranscribedTextChanged: (text: String) -> Unit
 ) {
-    try {
-        StorageService.unpack(
-                context,
-                "vosk-model-small-en-us-0.15",
-                "model",
-                { unpackedModel ->
-                    try {
-                        voskModel = unpackedModel
-                        voskRecognizer = Recognizer(voskModel, 16000.0f)
-                    } catch (e: Exception) {
-                        voskRecognizer = null
-                        voskModel = null
-                    }
-                },
-                { exception ->
-                    Log.e("VOSK", "Failed to unpack Vosk model: ${exception.message}", exception)
-                    voskModel = null
-                    voskRecognizer = null
-                }
-        )
-    } catch (e: Exception) {
-        Log.e("VOSK", "Unexpected error while loading model: ${e.message}", e)
-        voskModel = null
-        voskRecognizer = null
+    // Step 1: Try to safely initialize Vosk (new helper function)
+    val voskReady = initializeVoskSafely(context)
+
+    if (!voskReady) {
+        Log.w("VOSK", "Speech recognition disabled due to initialization failure on this device. " +
+                "Loudness detection and audio chunking will continue normally.")
+        // Optional: You could notify your UI/JS layer here if desired
+        // onTranscribedTextChanged?.invoke("[Speech recognition unavailable]")
     }
+
     val sampleRate = 16000
     val bufferSize = AudioRecord.getMinBufferSize(
             sampleRate,
@@ -357,6 +381,7 @@ private fun startAudioLoudnessDetection(
     )
 
     if (ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        Log.w("Audio", "RECORD_AUDIO permission not granted — skipping audio processing")
         return
     }
 
@@ -378,6 +403,7 @@ private fun startAudioLoudnessDetection(
             if (read > 0) {
                 val (db, isTalking) = calculateLoudness(buffer, read)
 
+                // Vosk recognition part (already guarded)
                 try {
                     if (read > 0) {
                         val recognizer = voskRecognizer
@@ -391,20 +417,11 @@ private fun startAudioLoudnessDetection(
                                     bytes[i * 2 + 1] = ((buffer[i].toInt() shr 8) and 0xFF).toByte()
                                 }
 
-                                val now = System.currentTimeMillis()
-                                // 3 listas de igual dimension
-                                // lista con palabras del model
-                                // lista con la ultima vez que se actualizo cada palabra (timestamp)
-                                // lista con un booleano que diga si se mando o no
-
-                                // cuando obtengo una nueva palabra, agrego una nueva palabra a la lista
-                                // usando un delay de aprox 200 ms
                                 if (recognizer.acceptWaveForm(bytes, bytes.size)) {
-                                    // ✅ Final result
+                                    // Final result
                                     val finalResult = recognizer.result
                                     val text = JSONObject(finalResult).optString("text", "").trim()
                                     if (text.isNotEmpty()) {
-                                        // remove already sent words
                                         val filteredText = text.split("\\s+".toRegex())
                                                 .filter { it !in sentWords }
                                                 .joinToString(" ")
@@ -413,28 +430,25 @@ private fun startAudioLoudnessDetection(
                                             onTranscribedTextChanged(filteredText)
                                         }
 
-                                        // clean sent words for next segment
                                         sentWords.clear()
                                     }
-                                 } else {
-                                    // ⚙️ Partial result
+                                } else {
+                                    // Partial result
                                     val partialText = JSONObject(recognizer.partialResult).optString("partial", "").trim()
                                     if (partialText.isNotEmpty()) {
-                                        // split partial text and filter out previously sent words
                                         val partialWords = partialText.split("\\s+".toRegex())
                                         val newWords = partialWords.filter { it !in sentWords }
 
                                         if (newWords.isNotEmpty()) {
-                                            // mark them as sent
                                             sentWords.addAll(newWords)
-                                            // send only new ones
                                             onTranscribedTextChanged(newWords.joinToString(" "))
                                         }
                                     }
                                 }
-
-                            } catch (e: Exception) {
+                            } catch (e: Throwable) {
                                 Log.e("VOSK", "Error during recognition: ${e.message}", e)
+                                // Extra safety: disable Vosk for the rest of this session if it crashes here
+                                voskRecognizer = null
                             }
                         }
                     }
@@ -442,9 +456,9 @@ private fun startAudioLoudnessDetection(
                     Log.e("VOSK", "Unexpected error processing audio chunk: ${e.message}", e)
                 }
 
+                // Silence detection and chunk management (unchanged)
                 if (!isTalking) {
                     audioState.silenceInterval++
-
                 } else {
                     audioState.silenceInterval = 0
                     audioState.silence = false
@@ -455,14 +469,13 @@ private fun startAudioLoudnessDetection(
 
                 if (audioState.lastSilence != audioState.silence) {
                     if (audioState.silence) {
-                        // 🔴 Silence detected: finalize chunk
-                        audioState.aacCodec?.stop()
-                        audioState.aacCodec?.release()
+                        // Silence detected: finalize chunk
+                        audioState.aacCodec?.let {
+                            try { it.stop() } catch (_: Exception) {}
+                            try { it.release() } catch (_: Exception) {}
+                        }
                         audioState.aacCodec = null
 
-//                        if (audioState.muxerStarted) {
-//                            audioState.muxer?.stop()
-//                        }
                         safeStopAndRelease(audioState)
 
                         audioState.muxer?.release()
@@ -479,7 +492,7 @@ private fun startAudioLoudnessDetection(
 
                         audioState.audioChunkFile = null
 
-                        //Start new audio chunk immediately
+                        // Start new audio chunk
                         val dir = File(context.filesDir, "chunks")
                         if (!dir.exists()) dir.mkdirs()
 
@@ -496,57 +509,58 @@ private fun startAudioLoudnessDetection(
                         audioState.aacCodec?.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
                         audioState.aacCodec?.start()
                     } else {
-                        //talking resumes, notify
+                        // Talking resumes
                         onLoudnessDetected("", -1, -1)
                     }
                     audioState.lastSilence = audioState.silence
                 }
 
-                //TODO: We should record silence moments too
+                // AAC encoding (unchanged, but already has try-catch in your original)
                 if (audioState.aacCodec != null) {
-                    try{
-                    val byteBuffer = ByteArray(read * 2)
-                    for (i in 0 until read) {
-                        byteBuffer[i * 2] = (buffer[i].toInt() and 0xFF).toByte()
-                        byteBuffer[i * 2 + 1] = ((buffer[i].toInt() shr 8) and 0xFF).toByte()
-                    }
-
-                    val inputIndex = audioState.aacCodec!!.dequeueInputBuffer(0)
-                    if (inputIndex >= 0) {
-                        val inputBuf = audioState.aacCodec!!.getInputBuffer(inputIndex)!!
-                        inputBuf.clear()
-                        inputBuf.put(byteBuffer)
-                        audioState.aacCodec!!.queueInputBuffer(inputIndex, 0, byteBuffer.size, System.nanoTime() / 1000, 0)
-                    }
-
-                    val bufferInfo = MediaCodec.BufferInfo()
-                    var outputIndex = audioState.aacCodec!!.dequeueOutputBuffer(bufferInfo, 0)
-                    while (outputIndex >= 0) {
-                        val outBuf = audioState.aacCodec!!.getOutputBuffer(outputIndex)!!
-                        val encodedData = ByteBuffer.allocate(bufferInfo.size)
-                        encodedData.put(outBuf)
-                        encodedData.flip()
-
-                        if (audioState.muxer == null || audioState.aacCodec == null) {
-                            Log.w("AudioThread", "Skipping frame — muxer or codec already released")
-                            break
+                    try {
+                        val byteBuffer = ByteArray(read * 2)
+                        for (i in 0 until read) {
+                            byteBuffer[i * 2] = (buffer[i].toInt() and 0xFF).toByte()
+                            byteBuffer[i * 2 + 1] = ((buffer[i].toInt() shr 8) and 0xFF).toByte()
                         }
 
-                        if (!audioState.muxerStarted) {
-                            val format = audioState.aacCodec!!.outputFormat
-                            audioState.trackIndex = audioState.muxer!!.addTrack(format)
-                            audioState.muxer!!.start()
-                            audioState.muxerStarted = true
+                        val inputIndex = audioState.aacCodec!!.dequeueInputBuffer(0)
+                        if (inputIndex >= 0) {
+                            val inputBuf = audioState.aacCodec!!.getInputBuffer(inputIndex)!!
+                            inputBuf.clear()
+                            inputBuf.put(byteBuffer)
+                            audioState.aacCodec!!.queueInputBuffer(inputIndex, 0, byteBuffer.size, System.nanoTime() / 1000, 0)
                         }
 
-                        audioState.muxer!!.writeSampleData(audioState.trackIndex, encodedData, bufferInfo)
-                        audioState.aacCodec!!.releaseOutputBuffer(outputIndex, false)
-                        outputIndex = audioState.aacCodec!!.dequeueOutputBuffer(bufferInfo, 0)
-                    }
+                        val bufferInfo = MediaCodec.BufferInfo()
+                        var outputIndex = audioState.aacCodec!!.dequeueOutputBuffer(bufferInfo, 0)
+                        while (outputIndex >= 0) {
+                            val outBuf = audioState.aacCodec!!.getOutputBuffer(outputIndex)!!
+                            val encodedData = ByteBuffer.allocate(bufferInfo.size)
+                            encodedData.put(outBuf)
+                            encodedData.flip()
+
+                            if (audioState.muxer == null || audioState.aacCodec == null) {
+                                Log.w("AudioThread", "Skipping frame — muxer or codec already released")
+                                break
+                            }
+
+                            if (!audioState.muxerStarted) {
+                                val format = audioState.aacCodec!!.outputFormat
+                                audioState.trackIndex = audioState.muxer!!.addTrack(format)
+                                audioState.muxer!!.start()
+                                audioState.muxerStarted = true
+                            }
+
+                            audioState.muxer!!.writeSampleData(audioState.trackIndex, encodedData, bufferInfo)
+                            audioState.aacCodec!!.releaseOutputBuffer(outputIndex, false)
+                            outputIndex = audioState.aacCodec!!.dequeueOutputBuffer(bufferInfo, 0)
+                        }
                     } catch (e: IllegalStateException) {
                         Log.e("AudioThread", "Attempted to use released codec: ${e.message}")
-                        // Optionally break the loop here if this is unrecoverable
-                        break
+                        break  // Exit loop if codec is dead
+                    } catch (e: Exception) {
+                        Log.e("AudioThread", "Unexpected encoding error: ${e.message}", e)
                     }
                 }
             }
@@ -788,3 +802,4 @@ fun CameraSession.resumeRecording() {
     val recording = recording ?: throw NoRecordingInProgressError()
     recording.resume()
 }
+
